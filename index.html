@@ -6,21 +6,12 @@
     <meta name="description" content="Calculate the optimal order size and reorder point for continuous and periodic inventory systems.">
     <meta charset="utf-8">
     <meta name="viewport">
-    <!-- <link rel="SHORTCUT ICON" href="favicon.ico"> -->
     <meta http-equiv="Content-Type" content="text/html">
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <link rel="SHORTCUT ICON" href="favicon.ico?v=2" type="image/x-icon">  
-    <!-- <link rel="canonical" href=""> -->
+    <link rel="SHORTCUT ICON" href="favicon.ico" type="image/x-icon">  
     <link href="index.css" rel="stylesheet" type="text/css">
-    <link rel="preconnect" href="https://fonts.googleapis.com"> 
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin> 
-    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@200&display=swap" rel="stylesheet">
-    <link href='https://fonts.googleapis.com/css?family=Oswald' rel='stylesheet'>
-    <!-- calculation logic -->
-    <script async src="index.js" type="text/javascript"></script>
-    <!-- math library, make sure to keep maintained! -->
-    <script src='https://unpkg.com/simple-statistics@7.8.2/dist/simple-statistics.min.js'></script>
+    <script async src="index.js" type="module"></script>
   </head>
   <body>
     <header class="header">
@@ -32,179 +23,209 @@
     </section>
     <section class="input center-section">
       <div class="input-container container">
-        <div class="container-header">
+        <button type="button" class="collapsible-container-header">
           <h2>Inputs</h2>
+        </button>
+        <div class="collapsible-content">
+          <div class="input-container-inputs" id="input-container-inputs">
+            <div class="input-container-section">
+              <h3>General Configuration</h3>
+              <div class="input-container-row">
+                <div class="input-container-row-item">
+                  <span class="input-container-row-header">Backorder/Lost Sales?</span>
+                  <select name="backorderOrLostSales" id="backorderOrLostSales">
+                    <option value="backorder">Backorder</option>
+                    <option value="lostSales">Lost Sales</option>
+                  </select>
+                </div>
+                <div class="input-container-row-item">
+                  <span class="input-container-row-header">Continuous/Periodic Review?</span>
+                  <select name="review" id="review">
+                    <option value="continuous">Continuous</option>
+                    <option value="periodic">Periodic</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="input-container-section">
+              <h3>Number of Days Per Year</h3>
+              <input type="number" id="numDaysPerYear"></input>
+            </div>
+            <div class="input-container-section">
+              <h3>Daily Demand</h3>
+              <div class="input-container-row">
+                <div class="input-container-row-item">
+                  <span class="input-container-row-header">Mean</span>
+                  <div class="input-container-row-item-input">
+                    <input type="number" id="demandMean"></input>
+                    <p class="units">units/day</p>
+                  </div>
+                </div>
+                <div class="input-container-row-item">
+                  <span class="input-container-row-header">Standard Deviation</span>
+                  <div class="input-container-row-item-input">
+                    <input type="number" id="demandStdDev"></input>
+                    <p class="units">units/day</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="input-container-section">
+              <h3>Leadtime Length</h3>
+              <div class="input-container-row">
+                <div class="input-container-row-item">
+                  <span class="input-container-row-header">Mean</span>
+                  <div class="input-container-row-item-input">
+                    <input type="number" id="leadtimeMean"></input>
+                    <p class="units">days</p>
+                  </div>
+                </div>
+                <div class="input-container-row-item">
+                  <span class="input-container-row-header">Standard Deviation</span>
+                  <div class="input-container-row-item-input">
+                    <input type="number" id="leadtimeStdDev"></input>
+                    <p class="units">days</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="input-container-section">
+              <h3>Costs</h3>
+              <div class="input-container-row">
+                <div class="input-container-row-item">
+                  <span class="input-container-row-header">Purchase Price</span>
+                  <div class="input-container-row-item-input">
+                    <input type="number" id="purchasePrice"></input>
+                    <p class="units">$/unit</p>
+                  </div>
+                </div>
+                <div class="input-container-row-item">
+                  <span class="input-container-row-header">Order Setup Cost</span>
+                  <div class="input-container-row-item-input">
+                    <input type="number" id="orderSetupCost"></input>
+                    <p class="units">$/order</p>
+                  </div>
+                </div>
+              </div>
+              <div class="input-container-row">
+                <div class="input-container-row-item">
+                  <span class="input-container-row-header">Backorder/Lost Sales Cost</span>
+                  <div class="input-container-row-item-input">
+                    <input type="number" id="backorderLostsalesCost"></input>
+                    <p class="units">$/unit</p>
+                  </div>
+                </div>
+                <div class="input-container-row-item">
+                  <span class="input-container-row-header">Inventory Carrying Rate</span>
+                  <div class="input-container-row-item-input">
+                    <input type="number" id="invCarryingRate"></input>
+                    <p class="units">%</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="input-container-section">
+              <h3>Desired Service Levels</h3>
+              <div class="input-container-row">
+                <div class="input-container-row-item">
+                  <span class="input-container-row-header">Alpha</span>
+                  <div class="input-container-row-item-input">
+                    <input type="number" id="alpha"></input>
+                    <p class="units">%</p>
+                  </div>
+                </div>
+                <div class="input-container-row-item">
+                  <span class="input-container-row-header">Beta</span>
+                  <div class="input-container-row-item-input">
+                    <input type="number" id="beta"></input>
+                    <p class="units">%</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="input-container-section" id="review-period-details-container">
+              <h3>Review Period Details</h3>
+              <div class="input-container-row">
+                <div class="input-container-row-item">
+                  <span class="input-container-row-header">Review Period</span>
+                  <div class="input-container-row-item-input">
+                    <input type="number" id="reviewPeriod"></input>
+                    <p class="units">days</p>
+                  </div>
+                </div>
+                <div class="input-container-row-item">
+                  <span class="input-container-row-header">Inventory Review Cost</span>
+                  <div class="input-container-row-item-input">
+                    <input type="number" id="invReviewCost"></input>
+                    <p class="units">$/period</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <button class="input-submit" id="input-submit" type="submit">Calculate Policies</button>
+          <span id="input-error" class="error"></span>
+          <button id="fill">Fill Data</button>
         </div>
-        <div class="input-container-inputs" id="input-container-inputs">
-          <div class="input-container-section">
-            <h3>General Configuration</h3>
-            <div class="input-container-row">
-              <div class="input-container-row-item">
-                <span class="input-container-row-header">Backorder/Lost Sales?</span>
-                <select name="backorderOrLostSales" id="backorderOrLostSales">
-                  <option value="backorder">Backorder</option>
-                  <option value="lostSales">Lost Sales</option>
-                </select>
-              </div>
-              <div class="input-container-row-item">
-                <span class="input-container-row-header">Continuous/Periodic Review?</span>
-                <select name="review" id="review">
-                  <option value="continuous">Continuous</option>
-                  <option value="periodic">Periodic</option>
-                </select>
-              </div>
-            </div>
-          </div>
-          <div class="input-container-section">
-            <h3>Number of Days Per Year</h3>
-            <input type="number" id="numDaysPerYear"></input>
-          </div>
-          <div class="input-container-section">
-            <h3>Daily Demand</h3>
-            <div class="input-container-row">
-              <div class="input-container-row-item">
-                <span class="input-container-row-header">Mean</span>
-                <div class="input-container-row-item-input">
-                  <input type="number" id="demandMean"></input>
-                  <p class="units">units/day</p>
-                </div>
-              </div>
-              <div class="input-container-row-item">
-                <span class="input-container-row-header">Standard Deviation</span>
-                <div class="input-container-row-item-input">
-                  <input type="number" id="demandStdDev"></input>
-                  <p class="units">units/day</p>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="input-container-section">
-            <h3>Leadtime Length</h3>
-            <div class="input-container-row">
-              <div class="input-container-row-item">
-                <span class="input-container-row-header">Mean</span>
-                <div class="input-container-row-item-input">
-                  <input type="number" id="leadtimeMean"></input>
-                  <p class="units">days</p>
-                </div>
-              </div>
-              <div class="input-container-row-item">
-                <span class="input-container-row-header">Standard Deviation</span>
-                <div class="input-container-row-item-input">
-                  <input type="number" id="leadtimeStdDev"></input>
-                  <p class="units">days</p>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="input-container-section">
-            <h3>Costs</h3>
-            <div class="input-container-row">
-              <div class="input-container-row-item">
-                <span class="input-container-row-header">Purchase Price</span>
-                <div class="input-container-row-item-input">
-                  <input type="number" id="purchasePrice"></input>
-                  <p class="units">$/unit</p>
-                </div>
-              </div>
-              <div class="input-container-row-item">
-                <span class="input-container-row-header">Order Setup Cost</span>
-                <div class="input-container-row-item-input">
-                  <input type="number" id="orderSetupCost"></input>
-                  <p class="units">$/order</p>
-                </div>
-              </div>
-            </div>
-            <div class="input-container-row">
-              <div class="input-container-row-item">
-                <span class="input-container-row-header">Backorder/Lost Sales Cost</span>
-                <div class="input-container-row-item-input">
-                  <input type="number" id="backorderLostsalesCost"></input>
-                  <p class="units">$/unit</p>
-                </div>
-              </div>
-              <div class="input-container-row-item">
-                <span class="input-container-row-header">Inventory Carrying Rate</span>
-                <div class="input-container-row-item-input">
-                  <input type="number" id="invCarryingRate"></input>
-                  <p class="units">%</p>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="input-container-section">
-            <h3>Desired Service Levels</h3>
-            <div class="input-container-row">
-              <div class="input-container-row-item">
-                <span class="input-container-row-header">Alpha</span>
-                <div class="input-container-row-item-input">
-                  <input type="number" id="alpha"></input>
-                  <p class="units">%</p>
-                </div>
-              </div>
-              <div class="input-container-row-item">
-                <span class="input-container-row-header">Beta</span>
-                <div class="input-container-row-item-input">
-                  <input type="number" id="beta"></input>
-                  <p class="units">%</p>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="input-container-section" id="review-period-details-container">
-            <h3>Review Period Details</h3>
-            <div class="input-container-row">
-              <div class="input-container-row-item">
-                <span class="input-container-row-header">Review Period</span>
-                <div class="input-container-row-item-input">
-                  <input type="number" id="reviewPeriod"></input>
-                  <p class="units">days</p>
-                </div>
-              </div>
-              <div class="input-container-row-item">
-                <span class="input-container-row-header">Inventory Review Cost</span>
-                <div class="input-container-row-item-input">
-                  <input type="number" id="invReviewCost"></input>
-                  <p class="units">$/period</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <button class="input-submit" id="input-submit" type="submit">Calculate Policies</button>
-        <span id="input-error"></span>
-        <button id="fill">Fill Data</button>
       </div>
     </section>
     <section class="output center-section" id="output-anchor">
       <div class="container">
-        <div class="container-header">
+        <button type="button" class="collapsible-container-header">
           <h2>Outputs</h2>
-        </div>
-        <div class="output-table-row">
-          <div id="min-table" class="output-table"></div>
-          <div id="alpha-table" class="output-table"></div>
-        </div>
-        <div class="output-table-row">
-          <div id="beta-table" class="output-table"></div>
-          <div id="qr-table" class="output-table"></div>
+        </button>
+        <div class="collapsible-content">
+          <div class="output-table-row">
+            <div id="min-table" class="output-table-div"></div>
+            <div id="alpha-table" class="output-table-div"></div>
+          </div>
+          <div class="output-table-row">
+            <div id="beta-table" class="output-table-div"></div>
+            <div id="policy-table" class="output-table-div"></div>
+          </div>
         </div>
       </div>
     </section>
-    <section class="graph center-section">
+    <section class="tradeoff center-section">
       <div class="container">
-        <div class="container-header">
-          <h2>Graph</h2>
+        <button type="button" class="collapsible-container-header">
+          <h2>Tradeoff</h2>
+        </button>
+        <div class="collapsible-content">
+          <div class="tradeoff-settings">
+            <div class="select-variable tradeoff-settings-item">
+              <span class="tradeoff-settings-text">Tradeoff Against</span>
+              <select name="indepVariable" id="indepVariable" class="indep-variable">
+                <option value="alpha">Cycle Service Level</option>
+                <option value="beta">Fill Rate</option>
+                <option value="demandMean">Daily Demand Mean</option>
+                <option value="demandStdDev">Daily Demand Standard Deviation</option>
+                <option value="leadtimeMean">Leadtime Mean</option>
+                <option value="leadtimeStdDev">Leadtime Standard Deviation</option>
+              </select>
+            </div>
+            <div class="min-max-select tradeoff-settings-item">
+              <span class="tradeoff-settings-text">Min</span>
+              <input type="number" class="tradeoff-range" id="minRange" value="0.75"></input>
+              <span class="tradeoff-settings-text">Max</span>
+              <input type="number" class="tradeoff-range" id="maxRange" value="0.99"></input>
+              <label for="swapAxes" class="tradeoff-settings-text">Cost On X Axis</label>
+              <input type="checkbox" id="swapAxes" class="swap-axes-input" name="swapAxes"/>
+            </div>
+            <div class="tradeoff-submit-and-error tradeoff-settings-item">
+              <button class="tradeoff-submit" id="graph-submit" type="submit">Display Graph</button>
+              <span id="graph-error" class="error"></span>
+            </div>
+          </div>
+          <div class="graph-chart" id="graph-chart"><canvas id="graph-chart-canvas"></canvas></div>
+          <div class="tradeoff-table" id="tradeoff-table"></div>
         </div>
-        <input type="number" id="range"></input>
-        <div class="graph-chart"><canvas id="graph-chart-canvas"></canvas></div>
-        <script type="module" src="graph.js"></script>
       </div>
     </section>
     <section class="credits">
       <div class="credits-body">
         <span>© 2023 Northwestern University</span>
-        <span>Created by <a href="https://www.linkedin.com/in/dawson-ren/" class="credits-author-link">Dawson Ren</a></span>
+        <span>Created by <a href="https://www.linkedin.com/in/dawson-ren/" class="credits-author-link" target="_blank">Dawson Ren</a></span>
       </div>
     </section>
   </body>

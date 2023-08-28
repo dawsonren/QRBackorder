@@ -6,6 +6,10 @@ body {
     font-weight: 500;
 }
 
+h3 {
+    margin: 5px 0px;
+}
+
 button {
     font-family: inherit;
 }
@@ -13,12 +17,13 @@ button {
 input {
     width: 150px;
     height: 15px;
+    font-family: inherit;
 }
 
 select {
     width: 150px;
     margin-top: 5px;
-    margin-bottom: 5px
+    margin-bottom: 5px;
 }
 
 .header {
@@ -69,18 +74,41 @@ select {
     filter: drop-shadow(0 0 7px #BBB8B8);
 }
 
-.container-header {
-    background-color: #D9D9D9;
+.collapsible-container-header {
+    background-color: #D8D6D6;
     display: flex;
     align-items: center;
+    width: 100%;
     height: 50px;
+    border: none;
     box-sizing: border-box;
     padding: 25px;
+    text-align: left;
+    outline: none;
+    justify-content: space-between;
+}
+
+.collapsible-container-header:hover {
+    background-color: #BBB8B8;
+}
+
+.collapsible-container-header:after {
+    content: '\02795';
+    float: right;
+}
+
+.collapse-active:after {
+    content: '\2796';
+}
+
+.collapsible-content {
+    overflow: hidden;
+    display: none;
 }
 
 .input-container-section {
-    border-top: #D9D9D9 1px solid;
-    padding: 5px 25px 10px 25px;
+    border-top: #D8D6D6 1px solid;
+    padding: 5px 25px;
 }
 
 .input-container-row {
@@ -109,7 +137,7 @@ select {
 }
 
 .input-container-inputs {
-    padding-bottom: 25px;
+    padding-bottom: 10px;
     box-sizing: border-box;
 }
 
@@ -138,33 +166,43 @@ select {
     background-color: #836EAA;
 }
 
-#input-error {
+.error {
     color: red;
     margin-left: 10px;
 }
 
 .graph-chart {
-    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0px 50px;
 }
 
 .output-table-row {
     display: flex;
     flex-direction: row;
-    margin: 0px 25px;
-    width: 100%;
 }
 
 /* For screen widths < 750px, set to column */
-@media screen and (max-width: 750px) {
+@media screen and (max-width: 850px) {
     .output-table-row {
         display: flex;
         flex-direction: column;
     }
 }
 
+.output-table-div {
+    margin: 5px 25px;
+    min-width: calc(50% - 50px);
+}
+
+.output-table-row-group {
+    border-top: 1px #000 solid;
+}
+
 .output-table {
     width: 100%;
-    margin: 5px 0px;
+    border-collapse: collapse;
 }
 
 .output-table-header {
@@ -176,9 +214,90 @@ select {
     font-size: 14px;
 }
 
-.qr-input {
-    height: 12px;
+.output-table-result-cell {
+    text-align: right;
+}
+
+.policy-input {
+    height: 10px;
     width: 50px;
+}
+
+.tradeoff-settings {
+    display: flex;
+    flex-direction: column;
+    margin: 10px 25px;
+}
+
+.tradeoff-settings-item {
+    margin-bottom: 5px;
+}
+
+.tradeoff-settings-text {
+    margin-right: 5px;
+}
+
+.indep-variable {
+    width: 210px;
+}
+
+.swap-axes-input {
+    margin-top: 5px;
+    width: 20px;
+}
+
+.tradeoff-submit-and-error {
+    margin-top: 10px;
+}
+
+.tradeoff-submit {
+    background-color: #401F68;
+    color: #fff;
+    width: 150px;
+    height: 30px;
+    border: none;
+    font-size: 14px;
+    transition: background-color 0.1s;
+}
+
+.tradeoff-range {
+    width: 50px;
+    margin-right: 10px;
+}
+
+.tradeoff-table {
+    margin: 20px 25px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tradeoff-table-table {
+    overflow-x: auto;
+    display: block;
+    border-collapse: collapse;
+}
+
+.tradeoff-table-title {
+    font-size: 16px;
+}
+
+.tradeoff-table-header {
+    font-size: 14px;
+    padding: 0px 5px;
+}
+
+.tradeoff-table-body tr:nth-child(even) {
+    background-color: #D8D6D6;
+}
+
+.tradeoff-table-data-row {
+    border-top: 1px #000 solid;
+}
+
+.tradeoff-table-data {
+    padding: 0px 3px;
+    text-align: center;
 }
 
 .credits {

@@ -1,250 +1,12 @@
-/* Mathematical Functions */
-function normalCDF(z) {
-    return (1 + ss.errorFunction(z / Math.sqrt(2))) / 2
-}
-
-function normalPDF(z) {
-    return (1 / Math.sqrt(2 * Math.PI)) * Math.exp(-(1 / 2) * (z ** 2))
-}
-
-function invNormalCDF(p) {
-    // Use an approximation from Peter John Acklam, relative error < 10 ** -9
-    // https://stackedboxes.org/2017/05/01/acklams-normal-quantile-function/
-    const a1 = -39.6968302866538, a2 = 220.946098424521, a3 = -275.928510446969
-    const a4 = 138.357751867269, a5 = -30.6647980661472, a6 = 2.50662827745924
-    const b1 = -54.4760987982241, b2 = 161.585836858041, b3 = -155.698979859887
-    const b4 = 66.8013118877197, b5 = -13.2806815528857, c1 = -7.78489400243029E-03
-    const c2 = -0.322396458041136, c3 = -2.40075827716184, c4 = -2.54973253934373
-    const c5 = 4.37466414146497, c6 = 2.93816398269878, d1 = 7.78469570904146E-03
-    const d2 = 0.32246712907004, d3 = 2.445134137143, d4 = 3.75440866190742
-    const p_low = 0.02425, p_high = 1 - p_low
-    let q, r
-
-    if ((p < 0) || (p > 1)) { return NaN }
-
-    if (p < p_low) {
-        q = Math.sqrt(-2 * Math.log(p))
-        return (((((c1 * q + c2) * q + c3) * q + c4) * q + c5) * q + c6) / ((((d1 * q + d2) * q + d3) * q + d4) * q + 1)
-    } else if (p <= p_high) {
-        q = p - 0.5
-        r = q * q
-        return (((((a1 * r + a2) * r + a3) * r + a4) * r + a5) * r + a6) * q / (((((b1 * r + b2) * r + b3) * r + b4) * r + b5) * r + 1)
-    } else {
-        q = Math.sqrt(-2 * Math.log(1 - p))
-        return -(((((c1 * q + c2) * q + c3) * q + c4) * q + c5) * q + c6) / ((((d1 * q + d2) * q + d3) * q + d4) * q + 1)
-    }
-}
-
-function standardNormalLoss(z) {
-    return normalPDF(z) - z + z * normalCDF(z)
-}
-
-function invStandardNormalLoss(l) {
-    // Use a log-polynomial approximation from
-    // https://www.researchgate.net/profile/Claudia-Sikorski-2/publication/303854357_Numerical_Approximation_of_the_Inverse_Standardized_Loss_Function_for_Inventory_Control_Subject_to_Uncertain_Demand/links/5758251908ae5c6549075691/Numerical-Approximation-of-the-Inverse-Standardized-Loss-Function-for-Inventory-Control-Subject-to-Uncertain-Demand.pdf
-    // The absolute error is at most 3 * 10 ** -4, which admittedly isn't great
-    // The mean error is 10 ** -14, and the highest errors occur at extreme values
-    
-    // TODO: Find another way to approximate this well/use binary search on the monotonic function, as
-    // the error is unacceptably high for low fill rates (< 50%) compared to goal-seek in the spreadsheet!
-    x = Math.log(l)
-    z = (4.41738119e-09*x**12  + 1.79200966e-07*x**11
-         +3.01634229e-06*x**10 + 2.63537452e-05*x**9
-         +1.12381749e-04*x**8  + 5.71289020e-06*x**7
-         -2.64198510e-03*x**6  - 1.59986142e-02*x**5
-         -5.60399292e-02*x**4  - 1.48968884e-01*x**3
-         -3.68776346e-01*x**2  - 1.22551895e+00*x**1
-         -8.99375602e-01)
-    return z
-}
-
-/* Utility Functions */
-
-function continuousProcessFlowCalculations(Q, R, inputs) {
-    const avgLossPerCycle = continuousFindAvgLostPerCycle(inputs, R)
-    const annualDemand = inputs.numDaysPerYear * inputs.demandMean
-
-    const avgInv = Q / 2 + R - inputs.leadtimeDemandMean
-    // lost sales?
-    if (!inputs.backorder) {
-        avgInv += avgLossPerCycle
-    }
-    const avgFlowTime = avgInv / annualDemand * inputs.numDaysPerYear
-    const avgThroughput = avgInv / avgFlowTime
-    const avgInvTurns = 365 / avgFlowTime
-    return {
-        I: avgInv,
-        T: avgFlowTime,
-        TH: avgThroughput,
-        turns: avgInvTurns
-    }
-}
-
-function periodicProcessFlowCalculations(S, s, inputs) {
-    const avgLossPerCycle = periodicFindAvgLostPerCycle(inputs, S)
-    let avgInv = inputs.periodDemandMean / 2 + S - inputs.leadtimePeriodDemandMean
-    // lost sales?
-    if (!inputs.backorder) {
-        avgInv += avgLossPerCycle
-    }
-}
-
-function continuousFindAvgLostPerCycle(inputs, R) {
-    const z = (R - inputs.leadtimeDemandMean) / inputs.leadtimeDemandStdDev
-    return inputs.leadtimeDemandStdDev * standardNormalLoss(z)
-}
-
-function periodicFindAvgLostPerCycle(inputs, S) {
-    const z = (S - inputs.leadtimePeriodDemandMean) / inputs.leadtimePeriodDemandStdDev
-    return inputs.leadtimePeriodDemandStdDev * standardNormalLoss(z)
-}
-
-function findRFromQ(inputs, Q) {
-    let denom = inputs.backorderLostsalesCost * inputs.annualDemand
-    // lost sales?
-    if (!inputs.backorder) {
-        denom += inputs.holdingCost * Q
-    }
-    const z = invNormalCDF(1 - (inputs.holdingCost * Q / denom))
-    return inputs.leadtimeDemandMean + inputs.leadtimeDemandStdDev * z
-}
-
-function continuousCostCalculations(Q, R, inputs) {
-    const avgLossPerCycle = continuousFindAvgLostPerCycle(inputs, R)
-    const ordersPerYear = inputs.annualDemand / Q
-    let avgInv = Q / 2 + R - inputs.leadtimeDemandMean
-    // lost sales?
-    if (!inputs.backorder) {
-        avgInv += avgLossPerCycle
-    }
-
-    const invHoldingCost = avgInv * inputs.holdingCost
-    const backorderCost = inputs.backorderLostsalesCost * avgLossPerCycle * ordersPerYear
-    const setupCost = inputs.orderSetupCost * ordersPerYear
-    const totalCost = invHoldingCost + backorderCost + setupCost
-
-    return {
-        invHoldingCost,
-        backorderCost,
-        setupCost,
-        totalCost
-    }
-}
-
-function periodicCostCalculations(S, s, inputs) {
-    const avgLossPerPeriod = periodicFindAvgLostPerCycle(inputs, S)
-    const ordersPerYear = 365 / self.reviewPeriod
-    let avgInv = inputs.periodDemandMean / 2 + S - inputs.leadtimePeriodDemandMean
-    if (!inputs.backorder) {
-        avgInv += periodicFindAvgLostPerCycle(inputs, S)
-    }
-
-    const invHoldingCost = avgInv * inputs.holdingCost
-    const backorderCost = inputs.backorderLostsalesCost * avgLossPerPeriod * ordersPerYear
-    const setupCost = (inputs.orderSetupCost + inputs.invReviewCost) * ordersPerYear
-    const totalCost = invHoldingCost + backorderCost + setupCost
-
-    return {
-        invHoldingCost,
-        backorderCost,
-        setupCost,
-        totalCost
-    }
-}
-
-function optimalContinuous(inputs) {
-    // Use iterative approach (p. 434 in Iravani's textbook)
-    const abs_tol = 10 ** -5
-    const max_iters = 10
-
-    // Step 0
-    let Q_old = Math.sqrt(2 * inputs.orderSetupCost * inputs.annualDemand / inputs.holdingCost)
-    let R_old = findRFromQ(inputs, Q_old)
-    let iters = 0
-
-    while (true) {
-        iters += 1
-
-        // Step 1
-        let backorderLostsalesLoss = inputs.backorderLostsalesCost * continuousFindAvgLostPerCycle(inputs, R_old)
-        let Q_new = Math.sqrt(2 * inputs.annualDemand * (inputs.orderSetupCost + backorderLostsalesLoss) / inputs.holdingCost)
-        let R_new = findRFromQ(inputs, Q_new)
-
-        // Step 2
-        if ((iters >= max_iters) || ((Math.abs(Q_old - Q_new) <= abs_tol) && (Math.abs(R_old - R_new) <= abs_tol))) {
-            return {
-                Q: Q_new,
-                R: R_new
-            }
-        } else {
-            Q_old = Q_new
-            R_old = R_new
-        }
-    }
-}
-
-function optimalS(inputs) {
-    const denom = inputs.backorderLostsalesCost
-    if (!inputs.backorder) {
-        denom += inputs.holdingCost * inputs.periodsPerYear
-    }
-    const p = 1 - (inputs.holdingCost / denom) * inputs.periodsPerYear
-    const S = inputs.leadtimePeriodDemandMean + inputs.leadtimePeriodDemandStdDev * invNormalCDF(p)
-    return {
-        S: S,
-        s: S
-    }
-}
-
-function optimalSs(inputs) {
-    const {Q, R} = optimalContinuous(inputs)
-    return {
-        S: R + Q,
-        s: R
-    }
-}
-
-function optimalPeriodic(inputs) {
-    return inputs.orderSetupCost > 0 ? optimalSs(inputs) : optimalS(inputs)
-}
-
-function alphaContinuous(inputs) {
-    const R = inputs.leadtimeDemandMean + invNormalCDF(inputs.alpha) * inputs.leadtimeDemandStdDev
-    const backorderLostsalesLoss = inputs.backorderLostsalesCost * continuousFindAvgLostPerCycle(inputs, R)
-    const Q = Math.sqrt(2 * inputs.annualDemand * (inputs.orderSetupCost + backorderLostsalesLoss) / inputs.holdingCost)
-    return {Q, R}
-}
-
-function betaContinuous(inputs) {
-    const Q = Math.sqrt(2 * inputs.orderSetupCost * inputs.annualDemand / inputs.holdingCost)
-    let denom = inputs.leadtimeDemandStdDev
-    if (!inputs.backorder) {
-        denom *= inputs.beta
-    }
-    const z = invStandardNormalLoss((1 - inputs.beta) * Q / denom)
-    const R = inputs.leadtimeDemandMean + inputs.leadtimeDemandStdDev * z
-    return {Q, R}
-}
-
-function alphaPeriodic(inputs) {
-    // assume that K = 0
-    const z = invNormalCDF(inputs.alpha)
-    const S = inputs.leadtimePeriodDemandMean + inputs.leadtimePeriodDemandStdDev * z
-    return {
-        S: S,
-        s: S
-    }
-}
-
-function betaPeriodic(inputs) {
-    // assume that K = 0
-    const loss = (1 - inputs.beta) * inputs.leadtimePeriodDemandMean / inputs.leadtimePeriodDemandStdDev
-    return invStandardNormalLoss(loss)
-}
+import { processFlowCalculations, costCalculations, optimal, alpha, beta } from './calculations.js'
+import { generateGraph } from './graph.js'
+// import fonts so we don't have to get it from Google Fonts CDN
+import '@fontsource/oswald/200.css'
+import '@fontsource/oswald/400.css'
 
 /* UI Changes */
 
-function getInputs() {
+function getRawInputs() {
     const inputs = {
         numDaysPerYear: document.getElementById('numDaysPerYear').value,
         demandMean: document.getElementById('demandMean').value,
@@ -263,6 +25,31 @@ function getInputs() {
         // 0s serve as null values
         reviewPeriod: document.getElementById('reviewPeriod') ? document.getElementById('reviewPeriod').value : 0,
         invReviewCost: document.getElementById('invReviewCost') ? document.getElementById('invReviewCost').value : 0
+    }
+    return inputs
+}
+
+function cleanInputs(inputs, raiseError=true) {
+    // handle cleaning to floats, raise UI error if empty/invalid
+    let errorMessage = false
+
+    // convert inputs to float (can't error because type=number in HTML)
+    Object.keys(inputs).forEach(k => {
+        inputs[k] = parseFloat(inputs[k])
+        // error on incorrect input
+        if (isNaN(inputs[k])) {
+            errorMessage = true
+        }
+    })
+
+    // set error message for inputs
+    if (raiseError) {
+        if (errorMessage) {
+            document.getElementById('input-error').innerText = 'Inputs incorrectly specified.'
+            return
+        } else {
+            document.getElementById('input-error').innerText = ''
+        }
     }
 
     // perform other useful calculations
@@ -284,6 +71,10 @@ function getInputs() {
     return inputs
 }
 
+function getCleanedInputs() {
+    return cleanInputs(getRawInputs())
+}
+
 function mapTableValue(x) {
     // of type Node or string
     if (typeof x === 'object') {
@@ -299,6 +90,7 @@ function mapTableValue(x) {
 function generateTable(tableHeaderText, tableData) {
     // tableData is a map whose contract is specified in generateTableData
     const tbl = document.createElement('table')
+    tbl.classList.add('output-table')
     const tblBody = document.createElement('tbody')
 
     // create header
@@ -314,6 +106,7 @@ function generateTable(tableHeaderText, tableData) {
     for (const [sectionHeaderText, sectionHeaderData] of tableData.entries()) {
         // create section header
         const sectionHeaderRow = document.createElement('tr')
+        sectionHeaderRow.classList.add('output-table-row-group')
         const sectionHeader = document.createElement('td')
         sectionHeader.setAttribute('colspan', 2)
         sectionHeader.appendChild(document.createTextNode(sectionHeaderText))
@@ -326,10 +119,11 @@ function generateTable(tableHeaderText, tableData) {
             const nameCell = document.createElement('td')
             const valueCell = document.createElement('td')
             nameCell.appendChild(document.createTextNode(name))
+            valueCell.classList.add('output-table-result-cell')
             valueCell.appendChild(mapTableValue(value))
             valueRow.appendChild(nameCell)
             valueRow.appendChild(valueCell)
-            tblBody.append(valueRow)
+            tblBody.appendChild(valueRow)
         }
     }
   
@@ -338,7 +132,7 @@ function generateTable(tableHeaderText, tableData) {
     return tbl
 }
 
-function constructTableDataMap(QS, Rs, I, T, TH, turns, invHoldingCost, backorderCost, setupCost, totalCost, continuous) {
+function constructTableDataMap(QS, Rs, I, T, TH, turns, invHoldingCost, backorderLostsalesCost, setupCost, totalCost, continuous) {
     // QS is Q or S, Rs is R or s
     // continuous is a boolean for whether or not the problem is continuous
     const optTableData = new Map()
@@ -355,7 +149,7 @@ function constructTableDataMap(QS, Rs, I, T, TH, turns, invHoldingCost, backorde
 
     const costs = new Map()
     costs.set('Average Annual Inventory Cost', invHoldingCost)
-    costs.set('Average Annual Backorder Cost', backorderCost)
+    costs.set('Average Annual Backorder Cost', backorderLostsalesCost)
     costs.set('Average Annual Setup Cost', setupCost)
     costs.set('Total Average Annual Cost', totalCost)
 
@@ -366,15 +160,17 @@ function constructTableDataMap(QS, Rs, I, T, TH, turns, invHoldingCost, backorde
     return optTableData
 }
 
-function generateTableData(QS, Rs, processFlow, costCalculations, inputs) {
+function generateTableData(policy, inputs) {
     /*
         processFlow: (Q, R, inputs) => {I, T, TH, turns}
         costCalculations: (Q, R, inputs) => {invHoldingCost, backorderOrCost, setupCost, totalCost}
     */
-    const {I, T, TH, turns} = processFlow(QS, Rs, inputs)
-    const {invHoldingCost, backorderCost, setupCost, totalCost} = costCalculations(QS, Rs, inputs)
+    const {I, T, TH, turns} = processFlowCalculations(policy, inputs)
+    const {invHoldingCost, backorderLostsalesCost, setupCost, totalCost} = costCalculations(policy, inputs)
+    const policyParam1 = inputs.continuous ? policy.Q : policy.S
+    const policyParam2 = inputs.continuous ? policy.R : policy.s
 
-    return constructTableDataMap(QS, Rs, I, T, TH, turns, invHoldingCost, backorderCost, setupCost, totalCost)
+    return constructTableDataMap(policyParam1, policyParam2, I, T, TH, turns, invHoldingCost, backorderLostsalesCost, setupCost, totalCost, inputs.continuous)
 }
 
 function generateTables(inputs) {
@@ -386,88 +182,290 @@ function generateTables(inputs) {
     alphaTableDiv.textContent = ''
     betaTableDiv.textContent = ''
 
-    // TODO: change process flow and cost calculations
-
     // min cost
-    const minCost = optimalContinuous(inputs)
-    const minCostTableData = generateTableData(minCost.Q, minCost.R, continuousProcessFlowCalculations, continuousCostCalculations, inputs)
+    const minCostPolicy = optimal(inputs)
+    const minCostTableData = generateTableData(minCostPolicy, inputs)
     const minCostTable = generateTable('Minimizing Total Average Annual Cost', minCostTableData)
     minTableDiv.appendChild(minCostTable)
 
     // alpha
-    const alpha = alphaContinuous(inputs)
-    const alphaTableData = generateTableData(alpha.Q, alpha.R, continuousProcessFlowCalculations, continuousCostCalculations, inputs)
-    const alphaTable = generateTable('Achieving Cycle Service Level, Alpha', alphaTableData)
+    const alphaPolicy = alpha(inputs)
+    const alphaTableData = generateTableData(alphaPolicy, inputs)
+    const alphaTable = generateTable('Achieving Cycle Service Level', alphaTableData)
     alphaTableDiv.appendChild(alphaTable)
 
     // beta
-    const beta = betaContinuous(inputs)
-    const betaTableData = generateTableData(beta.Q, beta.R, continuousProcessFlowCalculations, continuousCostCalculations, inputs)
-    const betaTable = generateTable('Achieving Fill Rate, Beta', betaTableData)
+    const betaPolicy = beta(inputs)
+    const betaTableData = generateTableData(betaPolicy, inputs)
+    const betaTable = generateTable('Achieving Fill Rate', betaTableData)
     betaTableDiv.appendChild(betaTable)
 }
 
-function generateRestOfQRTable(userQR, inputs, qrTableDiv, qInput, rInput) {
-    qrTableDiv.innerText = ''
-    let qrTableData
-    if (isFinite(userQR.Q) && isFinite(userQR.R)) {
-        const {Q, R} = userQR
-        const {I, T, TH, turns} = continuousProcessFlowCalculations(Q, R, inputs)
-        const {invHoldingCost, backorderCost, setupCost, totalCost} = continuousCostCalculations(Q, R, inputs)
-        qrTableData = constructTableDataMap(qInput, rInput, I, T, TH, turns, invHoldingCost, backorderCost, setupCost, totalCost)
+function arrayToPolicy(policyInput, inputs) {
+    if (inputs.continuous) {
+        return {
+            Q: policyInput[0],
+            R: policyInput[1]
+        }
     } else {
-        // create empty table if not
-        qrTableData = constructTableDataMap(qInput, rInput, '', '', '', '', '', '', '', '')
+        return {
+            S: policyInput[0],
+            s: policyInput[1]
+        }
     }
-    const qrTable = generateTable('Performance Measures for Given Policy', qrTableData)
-    qrTableDiv.appendChild(qrTable)
 }
 
-function generateQRTable(inputs) {
-    const qrTableDiv = document.getElementById('qr-table')
+function generateRestOfPolicyTable(policyInput, inputs, policyTableDiv, input1, input2) {
+    policyTableDiv.innerText = ''
+    let policyTableData
 
-    const userQR = {Q: NaN, R: NaN}
+    const policy = arrayToPolicy(policyInput, inputs)
+    if (isFinite(policyInput[0]) && isFinite(policyInput[1])) {
+        const {I, T, TH, turns} = processFlowCalculations(policy, inputs)
+        const {invHoldingCost, backorderLostsalesCost, setupCost, totalCost} = costCalculations(policy, inputs)
+        policyTableData = constructTableDataMap(input1, input2, I, T, TH, turns, invHoldingCost, backorderLostsalesCost, setupCost, totalCost, inputs.continuous)
+    } else {
+        // create empty table if not
+        policyTableData = constructTableDataMap(input1, input2, '', '', '', '', '', '', '', '', inputs.continuous)
+    }
+    const policyTable = generateTable('Performance Measures for Given Policy', policyTableData, inputs.continuous)
+    policyTableDiv.appendChild(policyTable)
+}
 
-    const qInput = document.createElement('input')
-    const rInput = document.createElement('input')
-    qInput.classList.add('qr-input')
-    rInput.classList.add('qr-input')
-    qInput.addEventListener('change', (e) => {
-        userQR.Q = parseFloat(e.target.value)
-        generateRestOfQRTable(userQR, inputs, qrTableDiv, qInput, rInput)
+function generatePolicyTable(inputs) {
+    const policyTableDiv = document.getElementById('policy-table')
+
+    // index 0 is Q or S, index 1 is R or s
+    const policyInput = [NaN, NaN]
+
+    const input1 = document.createElement('input')
+    const input2 = document.createElement('input')
+    input1.classList.add('policy-input')
+    input2.classList.add('policy-input')
+    input1.addEventListener('change', (e) => {
+        policyInput[0] = parseFloat(e.target.value)
+        generateRestOfPolicyTable(policyInput, inputs, policyTableDiv, input1, input2)
     })
-    rInput.addEventListener('change', (e) => {
-        userQR.R = parseFloat(e.target.value)
-        generateRestOfQRTable(userQR, inputs, qrTableDiv, qInput, rInput)
+    input2.addEventListener('change', (e) => {
+        policyInput[1] = parseFloat(e.target.value)
+        generateRestOfPolicyTable(policyInput, inputs, policyTableDiv, input1, input2)
     })
 
-    generateRestOfQRTable(userQR, inputs, qrTableDiv, qInput, rInput)
+    generateRestOfPolicyTable(policyInput, inputs, policyTableDiv, input1, input2)
+}
+
+function getGraphInputs() {
+    const indepVariableEl = document.getElementById('indepVariable')
+
+    return {
+        minValue: parseFloat(document.getElementById('minRange').value),
+        maxValue: parseFloat(document.getElementById('maxRange').value),
+        indepVariableText: indepVariableEl.options[indepVariableEl.selectedIndex].text,
+        indepVariableValue: indepVariableEl.value
+    }
+}
+
+function getCleanedGraphInputs() {
+    const graphInputs = getGraphInputs()
+
+    // set error message for graphs
+    if (isNaN(graphInputs.minValue) || isNaN(graphInputs.maxValue) || (graphInputs.maxValue <= graphInputs.minValue)) {
+        document.getElementById('graph-error').innerText = 'Limits incorrectly specified.'
+        return
+    } else {
+        document.getElementById('graph-error').innerText = ''
+    }
+
+    return graphInputs
+}
+
+function range(start, stop, step) {
+    // simple range function, fully inclusive
+    let s = start
+    let l = []
+
+    while (s <= stop + step / 2) {
+        l.push(parseFloat(s.toFixed(3)))
+        s += step
+    }
+
+    return l
+}
+
+function getAxisForIndepVariable(graphInputs) {
+    // Return a list of floats between min and max inputs that's reasonable
+    if (['alpha', 'beta'].includes(graphInputs.indepVariableValue)) {
+        return range(graphInputs.minValue, graphInputs.maxValue, 0.01)
+    } else {
+        // we want somewhere between 10 and 100 values, adjust until we get there
+        let step = 1
+        let diff = graphInputs.maxValue - graphInputs.minValue
+        let values = diff / step
+
+        while (values < 10 || values > 100) {
+            // adjust step size
+            if (values < 10) {
+                step /= 10
+            } else {
+                step *= 10
+            }
+
+            // recalculate number of values
+            values = diff / step
+        }
+        return range(graphInputs.minValue, graphInputs.maxValue, step)
+    }
+}
+
+function getTradeoffData(rawInputs, graphInputs) {
+    const axisTitle = graphInputs.indepVariableText
+    const axisValues = getAxisForIndepVariable(graphInputs)
+    let policies = []
+    let invHoldingCosts = []
+    let backorderLostsalesCosts = []
+    let orderSetupCosts = []
+    let totalCosts = []
+
+    // when alpha or beta, use those, otherwise optimal
+    const policyFunc = (
+        graphInputs.indepVariableValue === 'alpha' ?
+            alpha :
+            graphInputs.indepVariableValue === 'beta' ?
+                beta : optimal
+    )
+
+    for (let val of axisValues) {
+        // shallow copy, this is fine since all are floats
+        let adjustedInputs = {...rawInputs}
+        // values in HTML match keys of inputs
+        adjustedInputs[graphInputs.indepVariableValue] = val
+        adjustedInputs = cleanInputs(adjustedInputs, false)
+
+        const policy = policyFunc(adjustedInputs)
+        policies.push(policy)
+        const {invHoldingCost, backorderLostsalesCost, setupCost, totalCost} = costCalculations(policy, adjustedInputs)
+        invHoldingCosts.push(invHoldingCost)
+        backorderLostsalesCosts.push(backorderLostsalesCost)
+        orderSetupCosts.push(setupCost)
+        totalCosts.push(totalCost)
+    }
+
+    return {
+        axisTitle,
+        axisValues,
+        policies,
+        invHoldingCosts,
+        backorderLostsalesCosts,
+        orderSetupCosts,
+        totalCosts
+    }
+}
+
+function generateTradeoffTable(rawInputs, tradeoffData) {
+    const {axisTitle, axisValues, policies, invHoldingCosts, backorderLostsalesCosts, orderSetupCosts, totalCosts} = tradeoffData
+
+    // turn list of policies into list of Q/S and R/s
+    const policyParam1 = policies.map((policy) => rawInputs.continuous ? policy.Q : policy.S)
+    const policyParam2 = policies.map((policy) => rawInputs.continuous ? policy.R : policy.s)
+
+    // construct table values
+    let tableValues = []
+
+    for (let i = 0; i < axisValues.length; i++) {
+        tableValues.push([
+            axisValues[i],
+            policyParam1[i],
+            policyParam2[i],
+            invHoldingCosts[i],
+            backorderLostsalesCosts[i],
+            orderSetupCosts[i],
+            totalCosts[i]
+        ])
+    }
+
+    // tableData is a map whose contract is specified in generateTableData
+    const tbl = document.createElement('table')
+    tbl.classList.add('tradeoff-table-table')
+    const tblBody = document.createElement('tbody')
+    tblBody.classList.add('tradeoff-table-body')
+
+    // create title
+    const tblHead = document.createElement('thead')
+    const headRow = document.createElement('tr')
+    const head = document.createElement('th')
+    head.setAttribute('colspan', 7)
+    head.appendChild(document.createTextNode(`Cost as a Function of ${axisTitle}`))
+    head.classList.add('tradeoff-table-title')
+    headRow.appendChild(head)
+    tblHead.appendChild(headRow)
+
+    // create header
+    const headerRow = document.createElement('tr')
+
+    const headerNames = [
+        axisTitle,
+        rawInputs.continuous ? 'Optimal Q' : 'Optimal S',
+        rawInputs.continuous ? 'Optimal R' : 'Optimal s',
+        'Average Inventory Cost',
+        rawInputs.backorder ? 'Average Backorder Cost' : 'Average Lost Sales Cost',
+        'Average Setup Cost',
+        'Total Average Annual Cost'
+    ]
+    for (let name of headerNames) {
+        const header = document.createElement('th')
+        header.classList.add('tradeoff-table-header')
+        header.appendChild(document.createTextNode(name))
+        headerRow.appendChild(header)
+    }
+    
+    tblHead.appendChild(headerRow)
+
+    // insert values
+    for (let i = 0; i < axisValues.length; i++) {
+        const valueRow = document.createElement('tr')
+        valueRow.classList.add('tradeoff-table-data-row')
+
+        for (let value of tableValues[i]) {
+            const valueCell = document.createElement('td')
+            valueCell.appendChild(document.createTextNode(value.toFixed(2)))
+            valueCell.classList.add('tradeoff-table-data')
+            valueRow.appendChild(valueCell)
+        }
+        tblBody.append(valueRow)
+    }
+  
+    tbl.appendChild(tblHead)
+    tbl.appendChild(tblBody)
+    
+    // UI updates
+    const tradeoffTableDiv = document.getElementById('tradeoff-table')
+    tradeoffTableDiv.textContent = ''
+    tradeoffTableDiv.appendChild(tbl)
+}
+
+function generateTradeoffGraph(inputs, tradeoffData) {
+    // returns the graph object
+    const {axisTitle, axisValues, invHoldingCosts, backorderLostsalesCosts, orderSetupCosts, totalCosts} = tradeoffData
+    const swapAxes = document.getElementById('swapAxes').checked
+    generateGraph(axisTitle, axisValues, invHoldingCosts, backorderLostsalesCosts, orderSetupCosts, totalCosts, inputs.backorder, swapAxes)
 }
   
 function calculate() {
-    const inputs = getInputs()
-    let errorMessage = false
-
-    // convert inputs to float (errorless because type=number in HTML)
-    Object.keys(inputs).forEach(k => {
-        inputs[k] = parseFloat(inputs[k])
-        // error on incorrect input
-        if (isNaN(inputs[k])) {
-            errorMessage = true
-        }
-    })
-
-    // set error message for inputs
-    if (errorMessage) {
-        document.getElementById('input-error').innerText = 'Inputs incorrectly specified.'
-        return
-    } else {
-        document.getElementById('input-error').innerText = ''
-    }
+    // get inputs
+    const inputs = getCleanedInputs()
+    if (!inputs) { return }
 
     // generate tables
     generateTables(inputs)
-    generateQRTable(inputs)
+    // You can control (Q, R) or (S, s) on this table
+    generatePolicyTable(inputs)
+
+    // generate graph
+    showGraph()
+
+    // toggle outputs/tradeoffs
+    openCollapsedOutputs()
+    openCollapsedTradeoffs()
 
     // scroll to outputs
     const outputAnchor = document.getElementById('output-anchor')
@@ -476,6 +474,32 @@ function calculate() {
         behavior: 'smooth',
         inline: 'center'
     });
+}
+
+function rawInputsAreValid(rawInputs) {
+    // if any are empty strings, invalid (might need to revisit this later)
+    let valid = true
+    Object.values(rawInputs).forEach((input) => {
+        if (input === '') {
+            valid = false
+        }
+    })
+
+    return valid
+}
+
+function showGraph() {
+    // get inputs
+    const rawInputs = getRawInputs()
+    if (!rawInputsAreValid(rawInputs)) { return }
+    const graphInputs = getCleanedGraphInputs()
+    if (!graphInputs) { return }
+
+    const tradeoffData = getTradeoffData(rawInputs, graphInputs)
+
+    // generate graph and tradeoff table
+    generateTradeoffTable(rawInputs, tradeoffData)
+    generateTradeoffGraph(rawInputs, tradeoffData)
 }
 
 function fill() {
@@ -504,8 +528,8 @@ function togglePeriodDetails(continuous) {
         savedReviewPeriodDetailsContainer = reviewPeriodDetailsContainer
         reviewPeriodDetailsContainer.remove()
     } else {
-        const inputContainerInputs = document.getElementById('input-container-inputs')
-        inputContainerInputs.appendChild(savedReviewPeriodDetailsContainer)
+        const inputContaineinput2s = document.getElementById('input-container-inputs')
+        inputContaineinput2s.appendChild(savedReviewPeriodDetailsContainer)
     }
 }
 
@@ -513,13 +537,55 @@ function togglePeriodDetails(continuous) {
 const submitButton = document.getElementById('input-submit')
 submitButton.addEventListener('click', calculate)
 
+// upon pressing 'Display Graph'
+const graphButton = document.getElementById('graph-submit')
+graphButton.addEventListener('click', showGraph)
+
 const fillButton = document.getElementById('fill')
 fillButton.addEventListener('click', fill)
 
 // handles visibility of review period details
 let savedReviewPeriodDetailsContainer = document.getElementById('review-period-details-container')
-// toggle at beginning, I get why we need lifecycle methods now...
-togglePeriodDetails(true)
 // handle change of visibility
 const reviewSelect = document.getElementById('review')
 reviewSelect.addEventListener('change', (e) => togglePeriodDetails(e.target.value === 'continuous'))
+
+// handle collapse
+const collapseButtons = document.getElementsByClassName('collapsible-container-header')
+
+// second order function
+const toggleCollapse = (i) => {
+    return (
+        function() {
+            collapseButtons[i].classList.toggle('collapse-active')
+            const content = collapseButtons[i].nextElementSibling
+            if (content.style.display === 'block') {
+                content.style.display = 'none'
+            } else {
+                content.style.display = 'block'
+            }
+        }
+    )
+}
+
+const openCollapsed = (i) => {
+    return (
+        function() {
+            collapseButtons[i].classList.toggle('collapse-active')
+            const content = collapseButtons[i].nextElementSibling
+            content.style.display = 'block'
+        }
+    )
+}
+
+const openCollapsedInputs = openCollapsed(0)
+const openCollapsedOutputs = openCollapsed(1)
+const openCollapsedTradeoffs = openCollapsed(2)
+
+for (let i = 0; i < collapseButtons.length; i++) {
+    collapseButtons[i].addEventListener('click', toggleCollapse(i))
+}
+
+// onLoad lifecycle code (runs once during first paint)
+togglePeriodDetails(true)
+openCollapsedInputs()
