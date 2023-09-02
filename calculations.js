@@ -171,7 +171,7 @@ function optimalContinuous(inputs) {
 
 function optimalS(inputs) {
     // when order setup cost is small
-    const denom = inputs.backorderLostsalesCost
+    let denom = inputs.backorderLostsalesCost
     if (!inputs.backorder) {
         denom += inputs.holdingCost * inputs.periodsPerYear
     }
