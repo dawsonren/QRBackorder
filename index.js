@@ -617,7 +617,7 @@ async function downloadExcel() {
     // get inputs
     const rawInputs = getRawInputs()
     if (!rawInputsAreValid(rawInputs)) { return }
-    const inputs = cleanInputs(rawInputs, raiseError=false)
+    const inputs = cleanInputs(rawInputs, false)
 
     // transform to inputs dataset
     const inputDataset = []
