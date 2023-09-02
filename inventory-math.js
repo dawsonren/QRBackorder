@@ -50,7 +50,7 @@ function invStandardNormalLoss(l) {
     // TODO: Find another way to approximate this well/use binary search on the monotonic function, as
     // the error is unacceptably high for low fill rates (< 50%) compared to goal-seek in the spreadsheet!
     const x = Math.log(l)
-    z = (4.41738119e-09*x**12  + 1.79200966e-07*x**11
+    const z = (4.41738119e-09*x**12  + 1.79200966e-07*x**11
          +3.01634229e-06*x**10 + 2.63537452e-05*x**9
          +1.12381749e-04*x**8  + 5.71289020e-06*x**7
          -2.64198510e-03*x**6  - 1.59986142e-02*x**5
