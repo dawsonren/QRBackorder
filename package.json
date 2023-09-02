@@ -3,12 +3,14 @@
     "dev": "npx parcel index.html"
   },
   "devDependencies": {
-    "parcel": "^2.9.3"
+    "parcel": "^2.9.3",
+    "process": "^0.11.10"
   },
   "dependencies": {
     "@cubejs-client/core": "^0.33.47",
     "@fontsource/oswald": "^5.0.8",
     "chart.js": "^4.3.3",
-    "simple-statistics": "^7.8.2"
+    "simple-statistics": "^7.8.2",
+    "write-excel-file": "^1.4.27"
   }
 }

@@ -35,14 +35,14 @@ function findRFromQ(inputs, Q) {
 /* Process Flow Calculations */
 function continuousProcessFlowCalculations(Q, R, inputs) {
     const avgLossPerCycle = continuousFindAvgLostPerCycle(inputs, R)
-    const annualDemand = inputs.numDaysPerYear * inputs.demandMean
+    const annualDemand = inputs.numPeriodsPerYear * inputs.demandMean
 
     let avgInv = Q / 2 + R - inputs.leadtimeDemandMean
     // lost sales?
     if (!inputs.backorder) {
         avgInv += avgLossPerCycle
     }
-    const avgFlowTime = avgInv / annualDemand * inputs.numDaysPerYear
+    const avgFlowTime = avgInv / annualDemand * inputs.numPeriodsPerYear
     const avgThroughput = avgInv / avgFlowTime
     const avgInvTurns = 365 / avgFlowTime
     return {
@@ -55,7 +55,7 @@ function continuousProcessFlowCalculations(Q, R, inputs) {
 
 function periodicProcessFlowCalculations(S, s, inputs) {
     const avgLossPerCycle = periodicFindAvgLostPerCycle(inputs, S)
-    const annualDemand = inputs.numDaysPerYear * inputs.demandMean
+    const annualDemand = inputs.numPeriodsPerYear * inputs.demandMean
     // this is incorrect!
     let avgInv = inputs.periodDemandMean / 2 + S - inputs.leadtimePeriodDemandMean
     // lost sales?
@@ -63,7 +63,7 @@ function periodicProcessFlowCalculations(S, s, inputs) {
         avgInv += avgLossPerCycle
     }
 
-    const avgFlowTime = avgInv / annualDemand * inputs.numDaysPerYear
+    const avgFlowTime = avgInv / annualDemand * inputs.numPeriodsPerYear
     const avgThroughput = avgInv / avgFlowTime
     const avgInvTurns = 365 / avgFlowTime
     return {

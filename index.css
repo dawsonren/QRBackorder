@@ -219,8 +219,10 @@ select {
 }
 
 .policy-input {
-    height: 10px;
-    width: 50px;
+    height: 14px;
+    width: 30px;
+    padding: 0px 2px;
+    border: 1px solid #000;
 }
 
 .tradeoff-settings {
@@ -258,6 +260,10 @@ select {
     border: none;
     font-size: 14px;
     transition: background-color 0.1s;
+}
+
+.tradeoff-submit:hover {
+    background-color: #836EAA;
 }
 
 .tradeoff-range {

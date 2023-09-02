@@ -1,1 +1,4 @@
-// TODO: fill with tests from the book for inventory-math.js
+// From Chapter 10, Problem 19, Coby Inn
+function test1() {
+    
+}

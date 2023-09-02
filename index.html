@@ -19,7 +19,7 @@
     </header>
     <section class="hero">
       <h1 class="hero-title">Computing Optimal Order Size and Reorder Point for Continuous and Periodic Review Inventory Systems</h1>
-      <h2 class="hero-description">Businesses need to decide how much inventory to hold to avoid excess inventory costs while providing the right level of service to customers. The total costs are made up of the inventory cost, the order setup cost, and the backorder/lost sales cost. The service level is measured either by alpha (probability of all orders in a demand period fulfilled without delay) or beta (probability any given order is fulfilled without delay). Assume that leadtime is normally distributed.</h2>
+      <h2 class="hero-description">Businesses need to decide how much inventory to hold to avoid excess inventory costs while providing the right level of service to customers. The total costs are made up of the inventory cost, the order setup cost, and the backorder/lost sales cost. The service level is measured either by alpha (probability of all orders in a demand period fulfilled without delay) or beta (probability any given order is fulfilled without delay). Assume that leadtime is normally distributed and is less than the time between orders.</h2>
     </section>
     <section class="input center-section">
       <div class="input-container container">
@@ -48,24 +48,24 @@
               </div>
             </div>
             <div class="input-container-section">
-              <h3>Number of Days Per Year</h3>
-              <input type="number" id="numDaysPerYear"></input>
+              <h3>Number of Periods Per Year</h3>
+              <input type="number" id="numPeriodsPerYear"></input>
             </div>
             <div class="input-container-section">
-              <h3>Daily Demand</h3>
+              <h3>Demand per Period</h3>
               <div class="input-container-row">
                 <div class="input-container-row-item">
                   <span class="input-container-row-header">Mean</span>
                   <div class="input-container-row-item-input">
                     <input type="number" id="demandMean"></input>
-                    <p class="units">units/day</p>
+                    <p class="units">units/period</p>
                   </div>
                 </div>
                 <div class="input-container-row-item">
                   <span class="input-container-row-header">Standard Deviation</span>
                   <div class="input-container-row-item-input">
                     <input type="number" id="demandStdDev"></input>
-                    <p class="units">units/day</p>
+                    <p class="units">units/period</p>
                   </div>
                 </div>
               </div>
@@ -77,14 +77,14 @@
                   <span class="input-container-row-header">Mean</span>
                   <div class="input-container-row-item-input">
                     <input type="number" id="leadtimeMean"></input>
-                    <p class="units">days</p>
+                    <p class="units">periods</p>
                   </div>
                 </div>
                 <div class="input-container-row-item">
                   <span class="input-container-row-header">Standard Deviation</span>
                   <div class="input-container-row-item-input">
                     <input type="number" id="leadtimeStdDev"></input>
-                    <p class="units">days</p>
+                    <p class="units">periods</p>
                   </div>
                 </div>
               </div>
@@ -128,14 +128,14 @@
               <h3>Desired Service Levels</h3>
               <div class="input-container-row">
                 <div class="input-container-row-item">
-                  <span class="input-container-row-header">Alpha</span>
+                  <span class="input-container-row-header">Cycle Service Level</span>
                   <div class="input-container-row-item-input">
                     <input type="number" id="alpha"></input>
                     <p class="units">%</p>
                   </div>
                 </div>
                 <div class="input-container-row-item">
-                  <span class="input-container-row-header">Beta</span>
+                  <span class="input-container-row-header">Fill Rate</span>
                   <div class="input-container-row-item-input">
                     <input type="number" id="beta"></input>
                     <p class="units">%</p>
@@ -150,7 +150,7 @@
                   <span class="input-container-row-header">Review Period</span>
                   <div class="input-container-row-item-input">
                     <input type="number" id="reviewPeriod"></input>
-                    <p class="units">days</p>
+                    <p class="units">periods</p>
                   </div>
                 </div>
                 <div class="input-container-row-item">
@@ -198,10 +198,14 @@
               <select name="indepVariable" id="indepVariable" class="indep-variable">
                 <option value="alpha">Cycle Service Level</option>
                 <option value="beta">Fill Rate</option>
-                <option value="demandMean">Daily Demand Mean</option>
-                <option value="demandStdDev">Daily Demand Standard Deviation</option>
+                <option value="demandMean">Demand Mean per Period</option>
+                <option value="demandStdDev">Demand Standard Deviation</option>
                 <option value="leadtimeMean">Leadtime Mean</option>
                 <option value="leadtimeStdDev">Leadtime Standard Deviation</option>
+                <option value="purchasePrice">Purchase Price</option>
+                <option value="orderSetupCost">Order Setup Cost</option>
+                <option value="backorderLostsalesCost">Backorder/Lost Sales Cost</option>
+                <option value="invCarryingRate">Inventory Carrying Rate</option>
               </select>
             </div>
             <div class="min-max-select tradeoff-settings-item">
@@ -214,6 +218,7 @@
             </div>
             <div class="tradeoff-submit-and-error tradeoff-settings-item">
               <button class="tradeoff-submit" id="graph-submit" type="submit">Display Graph</button>
+              <button class="tradeoff-submit" id="download-excel" type="submit">Download as Excel</button>
               <span id="graph-error" class="error"></span>
             </div>
           </div>

@@ -1,3 +1,4 @@
+import writeXlsxFile from 'write-excel-file'
 import { processFlowCalculations, costCalculations, optimal, alpha, beta } from './calculations.js'
 import { generateGraph } from './graph.js'
 // import fonts so we don't have to get it from Google Fonts CDN
@@ -8,7 +9,7 @@ import '@fontsource/oswald/400.css'
 
 function getRawInputs() {
     const inputs = {
-        numDaysPerYear: document.getElementById('numDaysPerYear').value,
+        numPeriodsPerYear: document.getElementById('numPeriodsPerYear').value,
         demandMean: document.getElementById('demandMean').value,
         demandStdDev: document.getElementById('demandStdDev').value,
         leadtimeMean: document.getElementById('leadtimeMean').value,
@@ -64,7 +65,7 @@ function cleanInputs(inputs, raiseError=true) {
         inputs.demandMean ** 2 * inputs.leadtimeStdDev ** 2
         )
     inputs['periodDemandMean'] = inputs.demandMean * inputs.reviewPeriod
-    inputs['annualDemand'] = inputs.numDaysPerYear * inputs.demandMean
+    inputs['annualDemand'] = inputs.numPeriodsPerYear * inputs.demandMean
     inputs['holdingCost'] = inputs.purchasePrice * inputs.invCarryingRate
     inputs['periodsPerYear'] = 365 / inputs.reviewPeriod
 
@@ -138,8 +139,8 @@ function constructTableDataMap(QS, Rs, I, T, TH, turns, invHoldingCost, backorde
     const optTableData = new Map()
 
     const invPolicy = new Map()
-    invPolicy.set(continuous ? 'Optimal Order Quantity Q = ' : 'Order Up To Level S = ', QS)
-    invPolicy.set(continuous ? 'Optimal Reorder Point R = ' : 'Reorder Point s = ', Rs)
+    invPolicy.set(continuous ? 'Order Quantity Q = ' : 'Order Up To Level S = ', QS)
+    invPolicy.set(continuous ? 'Reorder Point R = ' : 'Reorder Point s = ', Rs)
 
     const processFlowMeasures = new Map()
     processFlowMeasures.set('Average Inventory I = ', I)
@@ -404,8 +405,8 @@ function generateTradeoffTable(rawInputs, tradeoffData) {
 
     const headerNames = [
         axisTitle,
-        rawInputs.continuous ? 'Optimal Q' : 'Optimal S',
-        rawInputs.continuous ? 'Optimal R' : 'Optimal s',
+        rawInputs.continuous ? 'Q' : 'S',
+        rawInputs.continuous ? 'R' : 's',
         'Average Inventory Cost',
         rawInputs.backorder ? 'Average Backorder Cost' : 'Average Lost Sales Cost',
         'Average Setup Cost',
@@ -502,18 +503,265 @@ function showGraph() {
     generateTradeoffGraph(rawInputs, tradeoffData)
 }
 
+const inputSchema = [
+    {
+        column: 'Input',
+        type: String,
+        value: row => row.name
+    },
+    {
+        column: 'Value',
+        type: Number,
+        format: '0.00',
+        value: row => row.value
+    }
+]
+
+const outputSchema = (continuous, backorder) => [
+    {
+        column: 'Name',
+        type: String,
+        value: row => row.name
+    },
+    {
+        column: continuous ? 'Order Quantity Q' : 'Order Up To Level S',
+        type: Number,
+        value: row => row.QS
+    },
+    {
+        column: continuous ? 'Reorder Point R' : 'Reorder Point s',
+        type: Number,
+        value: row => row.Rs
+    },
+    {
+        column: 'Average Inventory I',
+        type: Number,
+        value: row => row.I
+    },
+    {
+        column: 'Average Flow Time T',
+        type: Number,
+        value: row => row.T
+    },
+    {
+        column: 'Throughput TH',
+        type: Number,
+        value: row => row.TH
+    },
+    {
+        column: 'Inventory Turn',
+        type: Number,
+        value: row => row.turns
+    },
+    {
+        column: 'Average Annual Inventory Cost',
+        type: Number,
+        value: row => row.invHoldingCost
+    },
+    {
+        column: backorder ? 'Average Annual Backorder Cost' : 'Average Annual Lost Sales Cost',
+        type: Number,
+        value: row => row.backorderLostsalesCost
+    },
+    {
+        column: 'Average Annual Setup Cost',
+        type: Number,
+        value: row => row.setupCost
+    },
+    {
+        column: 'Total Average Annual Cost',
+        type: Number,
+        value: row => row.totalCost
+    }
+]
+
+const tradeoffSchema = (continuous, backorder, indepVarText) => [
+    {
+        column: indepVarText,
+        type: Number,
+        value: row => row.indepVarValue
+    },
+    {
+        column: continuous ? 'Order Quantity Q' : 'Order Up To Level S',
+        type: Number,
+        value: row => row.QS
+    },
+    {
+        column: continuous ? 'Reorder Point R' : 'Reorder Point s',
+        type: Number,
+        value: row => row.Rs
+    },
+    {
+        column: 'Average Annual Inventory Cost',
+        type: Number,
+        value: row => row.invHoldingCost
+    },
+    {
+        column: backorder ? 'Average Annual Backorder Cost' : 'Average Annual Lost Sales Cost',
+        type: Number,
+        value: row => row.backorderLostsalesCost
+    },
+    {
+        column: 'Average Annual Setup Cost',
+        type: Number,
+        value: row => row.setupCost
+    },
+    {
+        column: 'Total Average Annual Cost',
+        type: Number,
+        value: row => row.totalCost
+    }
+]
+
+async function downloadExcel() {
+    // get inputs
+    const rawInputs = getRawInputs()
+    if (!rawInputsAreValid(rawInputs)) { return }
+    const inputs = cleanInputs(rawInputs, raiseError=false)
+
+    // transform to inputs dataset
+    const inputDataset = []
+    for (let [key, value] of Object.entries(inputs)) {
+        inputDataset.push({
+            name: key,
+            value
+        })
+    }
+
+    // filename
+    const cont = inputs.continuous ? 'Continuous' : 'Periodic'
+    const back = inputs.backorder ? 'Backorder' : 'Lost Sales'
+    const filename = `${cont} ${back} Inventory Results.xlsx`
+
+    // Handle outputs
+    const outputDataset = []
+
+    const policyFuncs = [optimal, alpha, beta]
+    const outputNames = ['Minimizing Total Average Annual Cost', 'Achieving Cycle Service Level', 'Achieving Fill Rate']
+
+    for (let i = 0; i < outputNames.length; i++) {
+        const policy = policyFuncs[i](inputs)
+        const {I, T, TH, turns} = processFlowCalculations(policy, inputs)
+        const {invHoldingCost, backorderLostsalesCost, setupCost, totalCost} = costCalculations(policy, inputs)
+        const policyParam1 = inputs.continuous ? policy.Q : policy.S
+        const policyParam2 = inputs.continuous ? policy.R : policy.s
+        outputDataset.push({name: outputNames[i], QS: policyParam1, Rs: policyParam2, I, T, TH, turns, invHoldingCost, backorderLostsalesCost, setupCost, totalCost})
+    }
+
+    // min/max are value / divFactor and value * multFactor
+    const multFactor = 3
+
+    // Handle tradeoffs (graphInput objects)
+    const tradeoffInputs = [
+        {
+            minValue: 0,
+            maxValue: 0.99,
+            indepVariableText: 'Cycle Service Level',
+            indepVariableValue: 'alpha'
+        },
+        {
+            minValue: 0,
+            maxValue: 0.99,
+            indepVariableText: 'Fill Rate',
+            indepVariableValue: 'beta'
+        },
+        {
+            minValue: 0,
+            maxValue: inputs.demandMean * multFactor,
+            indepVariableText: 'Demand Mean',
+            indepVariableValue: 'demandMean'
+        },
+        {
+            minValue: 0,
+            maxValue: inputs.demandStdDev * multFactor,
+            indepVariableText: 'Demand Standard Deviation',
+            indepVariableValue: 'demandStdDev'
+        },
+        {
+            minValue: 0,
+            maxValue: inputs.leadtimeMean * multFactor,
+            indepVariableText: 'Leadtime Mean',
+            indepVariableValue: 'leadtimeMean'
+        },
+        {
+            minValue: 0,
+            maxValue: inputs.leadtimeStdDev * multFactor,
+            indepVariableText: 'Leadtime Standard Deviation',
+            indepVariableValue: 'leadtimeStdDev'
+        },
+        {
+            minValue: 0,
+            maxValue: inputs.purchasePrice * multFactor,
+            indepVariableText: 'Purchase Price',
+            indepVariableValue: 'purchasePrice'
+        },
+        {
+            minValue: 0,
+            maxValue: inputs.orderSetupCost * multFactor,
+            indepVariableText: 'Order Setup Cost',
+            indepVariableValue: 'orderSetupCost'
+        },
+        {
+            minValue: 0,
+            maxValue: inputs.backorderLostsalesCost * multFactor,
+            indepVariableText: 'Backorder or Lost Sales Cost',
+            indepVariableValue: 'backorderLostsalesCost'
+        },
+        {
+            minValue: 0,
+            maxValue: 100,
+            indepVariableText: 'Inventory Carrying Rate',
+            indepVariableValue: 'invCarryingRate'
+        }
+    ]
+
+    const schemas = [inputSchema, outputSchema(inputs.continuous, inputs.backorder)]
+    const sheetNames = ['Inputs', 'Outputs']
+    const datasets = [inputDataset, outputDataset]
+
+    for (let tradeoffInput of tradeoffInputs) {
+        const {axisValues, policies, invHoldingCosts, backorderLostsalesCosts, orderSetupCosts, totalCosts} = getTradeoffData(rawInputs, tradeoffInput)
+        const tradeoffDataset = []
+        for (let i = 0; i < axisValues.length; i++) {
+            if (isNaN(totalCosts[i])) { continue }
+            tradeoffDataset.push({
+                indepVarValue: axisValues[i],
+                QS: inputs.continuous ? policies[i].Q : policies[i].S,
+                Rs: inputs.continuous ? policies[i].R : policies[i].s,
+                invHoldingCost: invHoldingCosts[i],
+                backorderLostsalesCost: backorderLostsalesCosts[i],
+                setupCost: orderSetupCosts[i],
+                totalCost: totalCosts[i]
+            })
+        }
+        datasets.push(tradeoffDataset)
+        sheetNames.push(`${tradeoffInput.indepVariableText}`)
+        schemas.push(tradeoffSchema(inputs.continuous, inputs.backorder, tradeoffInput.indepVariableText))
+    }
+
+    console.log(datasets)
+    console.log(sheetNames)
+    console.log(schemas)
+
+    await writeXlsxFile(datasets, {
+        schema: schemas,
+        sheets: sheetNames,
+        fileName: filename
+    })
+}
+
 function fill() {
-    document.getElementById('numDaysPerYear').value = 360
-    document.getElementById('demandMean').value = 3
-    document.getElementById('demandStdDev').value = 1
-    document.getElementById('leadtimeMean').value = 3
-    document.getElementById('leadtimeStdDev').value = 1
-    document.getElementById('purchasePrice').value = 5
-    document.getElementById('orderSetupCost').value = 100
-    document.getElementById('backorderLostsalesCost').value = 2
+    document.getElementById('numPeriodsPerYear').value = 360
+    document.getElementById('demandMean').value = 50
+    document.getElementById('demandStdDev').value = 15
+    document.getElementById('leadtimeMean').value = 5
+    document.getElementById('leadtimeStdDev').value = 2
+    document.getElementById('purchasePrice').value = 9
+    document.getElementById('orderSetupCost').value = 60
+    document.getElementById('backorderLostsalesCost').value = 3
     document.getElementById('invCarryingRate').value = 20
     document.getElementById('alpha').value = 90
-    document.getElementById('beta').value = 95
+    document.getElementById('beta').value = 99
     if (document.getElementById('reviewPeriod')) {
         document.getElementById('reviewPeriod').value = 30
     }
@@ -540,6 +788,10 @@ submitButton.addEventListener('click', calculate)
 // upon pressing 'Display Graph'
 const graphButton = document.getElementById('graph-submit')
 graphButton.addEventListener('click', showGraph)
+
+// upon pressing 'Download as Excel'
+const excelButton = document.getElementById('download-excel')
+excelButton.addEventListener('click', downloadExcel)
 
 const fillButton = document.getElementById('fill')
 fillButton.addEventListener('click', fill)
