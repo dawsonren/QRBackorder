@@ -1,6 +1,7 @@
-import writeXlsxFile from 'write-excel-file'
 import { processFlowCalculations, costCalculations, optimal, alpha, beta } from './calculations.js'
 import { generateGraph } from './graph.js'
+import * as ExcelJS from "exceljs";
+import { saveAs } from 'file-saver';
 // import fonts so we don't have to get it from Google Fonts CDN
 import '@fontsource/oswald/200.css'
 import '@fontsource/oswald/400.css'
@@ -613,28 +614,61 @@ const tradeoffSchema = (continuous, backorder, indepVarText) => [
     }
 ]
 
+const mapInputToName = {
+    'alpha': 'Cycle Service Level',
+    'beta': 'Fill Rate',
+    'demandMean': 'Demand Mean',
+    'demandStdDev': 'Demand Standard Deviation',
+    'leadtimeMean': 'Leadtime Mean',
+    'leadtimeStdDev': 'Leadtime Standard Deviation',
+    'purchasePrice': 'Purchase Price',
+    'orderSetupCost': 'Order Setup Cost',
+    'backorderLostsalesCost': 'Backorder / Lost Sales Cost',
+    'invCarryingRate': 'Inventory Carrying Rate',
+    'reviewPeriod': 'Review Period',
+    'invReviewCost': 'Inventory Review Cost'
+}
+
+function transpose(matrix) {
+    return matrix[0].map((_, i) => matrix.map(row => row[i]));
+}
+
 async function downloadExcel() {
+    // create workbook and worksheets
+    const workbook = new ExcelJS.Workbook()
+    workbook.creator = 'Northwestern IEMS | Inventory Management Calculator';
+    workbook.lastModifiedBy = 'Northwestern IEMS | Inventory Management Calculator';
+    workbook.created = new Date();
+    workbook.modified = new Date();
+
     // get inputs
     const rawInputs = getRawInputs()
     if (!rawInputsAreValid(rawInputs)) { return }
     const inputs = cleanInputs(rawInputs, false)
 
-    // transform to inputs dataset
-    const inputDataset = []
-    for (let [key, value] of Object.entries(inputs)) {
-        inputDataset.push({
-            name: key,
-            value
-        })
+    // handle inputs
+    const inputDataset = [['Input', 'Value']]
+    for (let [key, value] of Object.entries(rawInputs)) {
+        inputDataset.push([mapInputToName[key], value])
     }
 
-    // filename
-    const cont = inputs.continuous ? 'Continuous' : 'Periodic'
-    const back = inputs.backorder ? 'Backorder' : 'Lost Sales'
-    const filename = `${cont} ${back} Inventory Results.xlsx`
+    const inputsSheet = workbook.addWorksheet('Inputs')
+    inputsSheet.addRows(inputDataset)
 
-    // Handle outputs
-    const outputDataset = []
+    // handle outputs
+    let outputDataset = [[
+        'Name',
+        inputs.continuous ? 'Order Quantity Q' : 'Order Up To Level S',
+        inputs.continuous ? 'Reorder Point R' : 'Reorder Point s',
+        'Average Inventory I',
+        'Average Flow Time T',
+        'Throughput TH',
+        'Inventory Turn',
+        'Average Annual Inventory Cost',
+        inputs.backorder ? 'Average Annual Backorder Cost' : 'Average Annual Lost Sales Cost',
+        'Average Annual Setup Cost',
+        'Inventory Review Cost'
+    ]]
 
     const policyFuncs = [optimal, alpha, beta]
     const outputNames = ['Minimizing Total Average Annual Cost', 'Achieving Cycle Service Level', 'Achieving Fill Rate']
@@ -645,13 +679,16 @@ async function downloadExcel() {
         const {invHoldingCost, backorderLostsalesCost, setupCost, totalCost} = costCalculations(policy, inputs)
         const policyParam1 = inputs.continuous ? policy.Q : policy.S
         const policyParam2 = inputs.continuous ? policy.R : policy.s
-        outputDataset.push({name: outputNames[i], QS: policyParam1, Rs: policyParam2, I, T, TH, turns, invHoldingCost, backorderLostsalesCost, setupCost, totalCost})
+        outputDataset.push([outputNames[i], policyParam1, policyParam2, I, T, TH, turns, invHoldingCost, backorderLostsalesCost, setupCost, totalCost])
     }
 
+    outputDataset = transpose(outputDataset)
+    const outputsSheet = workbook.addWorksheet('Outputs')
+    outputsSheet.addRows(outputDataset)
+
+    // Handle tradeoffs
     // min/max are value / divFactor and value * multFactor
     const multFactor = 3
-
-    // Handle tradeoffs (graphInput objects)
     const tradeoffInputs = [
         {
             minValue: 0,
@@ -715,39 +752,31 @@ async function downloadExcel() {
         }
     ]
 
-    const schemas = [inputSchema, outputSchema(inputs.continuous, inputs.backorder)]
-    const sheetNames = ['Inputs', 'Outputs']
-    const datasets = [inputDataset, outputDataset]
-
     for (let tradeoffInput of tradeoffInputs) {
         const {axisValues, policies, invHoldingCosts, backorderLostsalesCosts, orderSetupCosts, totalCosts} = getTradeoffData(rawInputs, tradeoffInput)
         const tradeoffDataset = []
         for (let i = 0; i < axisValues.length; i++) {
             if (isNaN(totalCosts[i])) { continue }
-            tradeoffDataset.push({
-                indepVarValue: axisValues[i],
-                QS: inputs.continuous ? policies[i].Q : policies[i].S,
-                Rs: inputs.continuous ? policies[i].R : policies[i].s,
-                invHoldingCost: invHoldingCosts[i],
-                backorderLostsalesCost: backorderLostsalesCosts[i],
-                setupCost: orderSetupCosts[i],
-                totalCost: totalCosts[i]
-            })
+            tradeoffDataset.push([
+                axisValues[i],
+                inputs.continuous ? policies[i].Q : policies[i].S,
+                inputs.continuous ? policies[i].R : policies[i].s,
+                invHoldingCosts[i],
+                backorderLostsalesCosts[i],
+                orderSetupCosts[i],
+                totalCosts[i]
+            ])
         }
-        datasets.push(tradeoffDataset)
-        sheetNames.push(`${tradeoffInput.indepVariableText}`)
-        schemas.push(tradeoffSchema(inputs.continuous, inputs.backorder, tradeoffInput.indepVariableText))
-    }
+        const outputsSheet = workbook.addWorksheet(tradeoffInput.indepVariableText)
+        outputsSheet.addRows(tradeoffDataset)
+    }    
 
-    console.log(datasets)
-    console.log(sheetNames)
-    console.log(schemas)
-
-    await writeXlsxFile(datasets, {
-        schema: schemas,
-        sheets: sheetNames,
-        fileName: filename
-    })
+    // save to file
+    const filename = `${inputs.continuous ? 'Continuous' : 'Periodic'} ${inputs.backorder ? 'Backorder' : 'Lost Sales'} Inventory Results.xlsx`
+    const buffer = await workbook.xlsx.writeBuffer(filename)
+    const fileType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    const blob = new Blob([buffer], {type: fileType});
+    saveAs(blob, filename)
 }
 
 function fill() {
