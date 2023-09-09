@@ -28,6 +28,7 @@ function findRFromQ(inputs, Q) {
     if (!inputs.backorder) {
         denom += inputs.holdingCost * Q
     }
+    console.log(1 - (inputs.holdingCost * Q / denom))
     const z = invNormalCDF(1 - (inputs.holdingCost * Q / denom))
     return inputs.leadtimeDemandMean + inputs.leadtimeDemandStdDev * z
 }
@@ -44,7 +45,7 @@ function continuousProcessFlowCalculations(Q, R, inputs) {
     }
     const avgFlowTime = avgInv / annualDemand * inputs.numPeriodsPerYear
     const avgThroughput = avgInv / avgFlowTime
-    const avgInvTurns = 365 / avgFlowTime
+    const avgInvTurns = inputs.numPeriodsPerYear / avgFlowTime
     return {
         I: avgInv,
         T: avgFlowTime,
@@ -65,7 +66,7 @@ function periodicProcessFlowCalculations(S, s, inputs) {
 
     const avgFlowTime = avgInv / annualDemand * inputs.numPeriodsPerYear
     const avgThroughput = avgInv / avgFlowTime
-    const avgInvTurns = 365 / avgFlowTime
+    const avgInvTurns = inputs.numPeriodsPerYear / avgFlowTime
     return {
         I: avgInv,
         T: avgFlowTime,
@@ -108,7 +109,7 @@ function continuousCostCalculations(Q, R, inputs) {
 
 function periodicCostCalculations(S, s, inputs) {
     const avgLossPerPeriod = periodicFindAvgLostPerCycle(inputs, S)
-    const ordersPerYear = 365 / inputs.reviewPeriod
+    const ordersPerYear = inputs.numPeriodsPerYear / inputs.reviewPeriod
     let avgInv = inputs.periodDemandMean / 2 + S - inputs.leadtimePeriodDemandMean
     if (!inputs.backorder) {
         avgInv += periodicFindAvgLostPerCycle(inputs, S)
@@ -117,8 +118,15 @@ function periodicCostCalculations(S, s, inputs) {
     const invHoldingCost = avgInv * inputs.holdingCost
     const backorderLostsalesCost = inputs.backorderLostsalesCost * avgLossPerPeriod * ordersPerYear
     // should we incorporate order setup cost into this? As in, inputs.orderSetupCost?
-    const setupCost = (inputs.invReviewCost) * ordersPerYear
+    const setupCost = inputs.invReviewCost * ordersPerYear
     const totalCost = invHoldingCost + backorderLostsalesCost + setupCost
+
+    console.log({
+        invHoldingCost,
+        backorderLostsalesCost,
+        setupCost,
+        totalCost
+    })
 
     return {
         invHoldingCost,
@@ -151,6 +159,8 @@ function optimalContinuous(inputs) {
     while (true) {
         iters += 1
 
+        console.log(Q_old, R_old)
+
         // Step 1
         let backorderLostsalesLoss = inputs.backorderLostsalesCost * continuousFindAvgLostPerCycle(inputs, R_old)
         let Q_new = Math.sqrt(2 * inputs.annualDemand * (inputs.orderSetupCost + backorderLostsalesLoss) / inputs.holdingCost)
@@ -172,10 +182,11 @@ function optimalContinuous(inputs) {
 function optimalS(inputs) {
     // when order setup cost is small
     let denom = inputs.backorderLostsalesCost
+    let timePeriod = 1 / inputs.periodsPerYear
     if (!inputs.backorder) {
-        denom += inputs.holdingCost * inputs.periodsPerYear
+        denom += inputs.holdingCost * timePeriod
     }
-    const p = 1 - (inputs.holdingCost / denom) * inputs.periodsPerYear
+    const p = 1 - (inputs.holdingCost / denom) * timePeriod
     const S = inputs.leadtimePeriodDemandMean + inputs.leadtimePeriodDemandStdDev * invNormalCDF(p)
     return {
         S: S,
@@ -262,4 +273,4 @@ function beta(inputs) {
     }
 }
 
-export { processFlowCalculations, costCalculations, optimal, alpha, beta }
+export { processFlowCalculations, costCalculations, optimal, alpha, beta, continuousFindAvgLostPerCycle, findRFromQ }

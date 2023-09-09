@@ -51,6 +51,7 @@ async function generateGraph(axisTitle, axisValues, invHoldingCost, backorderLos
             },
             options: {
                 indexAxis: swapAxes ? 'y' : 'x',
+                aspectRatio: 1 + ((window.innerWidth - 300) / window.screen.width),
                 plugins: {
                     title: {
                         display: true,

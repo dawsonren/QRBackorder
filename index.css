@@ -22,8 +22,8 @@ input {
 
 select {
     width: 150px;
-    margin-top: 5px;
-    margin-bottom: 5px;
+    margin-top: 10px;
+    margin-bottom: 10px;
 }
 
 .header {
@@ -124,9 +124,85 @@ select {
     }
 }
 
-.input-container-row-item {
+.flex-col {
     display: flex;
     flex-direction: column;
+}
+
+.tooltip {
+    position: relative;
+    display: inline-block;
+}
+
+.tooltip-text {
+    visibility: hidden;
+    background-color: #000;
+    color: #fff;
+    text-align: center;
+    padding: 5px 5px;
+    border-radius: 0px 6px 6px 6px;
+    width: 120px;
+    top: 150%;
+    left: 0%;
+   
+    position: absolute;
+    z-index: 100;
+}
+
+.tooltip-text-above {
+    visibility: hidden;
+    background-color: #000;
+    color: #fff;
+    text-align: center;
+    padding: 5px 5px;
+    border-radius: 6px 6px 6px 0px;
+    width: 120px;
+    bottom: 150%;
+    left: 0%;
+   
+    position: absolute;
+    z-index: 100;
+}
+
+.tooltip-text::after {
+    content: " ";
+    position: absolute;
+    bottom: 100%;
+    left: 5px;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: transparent transparent black black;
+}
+
+.tooltip-text-above::after {
+    content: " ";
+    position: absolute;
+    top: 100%;
+    left: 5px;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: black transparent transparent black;
+  }
+
+.tooltip:hover .tooltip-text {
+    visibility: visible;
+}
+
+.tooltip:active .tooltip-text {
+    visibility: visible;
+}
+
+.tooltip:hover .tooltip-text-above {
+    visibility: visible;
+}
+
+.tooltip:active .tooltip-text-above {
+    visibility: visible;
+}
+
+.input-container-row-item {
     width: 250px;
 }
 
@@ -143,6 +219,14 @@ select {
 
 .input-container-row-header {
     font-size: 14px;
+}
+
+.tooltip-highlight:hover {
+    border-bottom: 1px black dashed;
+}
+
+.tooltip-highlight:active {
+    border-bottom: 1px black dashed;
 }
 
 .units {
@@ -176,6 +260,11 @@ select {
     align-items: center;
     justify-content: center;
     margin: 0px 50px;
+}
+
+.output-container {
+    padding-top: 10px;
+    padding-bottom: 10px;
 }
 
 .output-table-row {

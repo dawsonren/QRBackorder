@@ -41,14 +41,35 @@ function standardNormalLoss(z) {
     return normalPDF(z) - z + z * normalCDF(z)
 }
 
-function invStandardNormalLoss(l) {
+function invertFunction(func, y) {
+    let left = -1000000
+    let right = 1000000
+    let tol = 0.00000001
+    let max_iters = 200
+    let iters = 0
+
+    while ((left <= right) && (iters <= max_iters)) {
+        iters += 1
+        let mid = left + (right - left) / 2;
+        let midmid = func(mid);
+        if (Math.abs(midmid - y) <= tol) return {x: mid, status: 0};
+        if (midmid > y) {
+            left = mid;
+        } else {
+            right = mid;
+        }
+    }
+
+    console.log(y, left, right, iters)
+
+    return {x: -1, status: 1}
+}
+
+function invStandardNormalLossApprox(l) {
     // Use a log-polynomial approximation from
     // https://www.researchgate.net/profile/Claudia-Sikorski-2/publication/303854357_Numerical_Approximation_of_the_Inverse_Standardized_Loss_Function_for_Inventory_Control_Subject_to_Uncertain_Demand/links/5758251908ae5c6549075691/Numerical-Approximation-of-the-Inverse-Standardized-Loss-Function-for-Inventory-Control-Subject-to-Uncertain-Demand.pdf
     // The absolute error is at most 3 * 10 ** -4, which admittedly isn't great
     // The mean error is 10 ** -14, and the highest errors occur at extreme values
-    
-    // TODO: Find another way to approximate this well/use binary search on the monotonic function, as
-    // the error is unacceptably high for low fill rates (< 50%) compared to goal-seek in the spreadsheet!
     const x = Math.log(l)
     const z = (4.41738119e-09*x**12  + 1.79200966e-07*x**11
          +3.01634229e-06*x**10 + 2.63537452e-05*x**9
@@ -58,6 +79,18 @@ function invStandardNormalLoss(l) {
          -3.68776346e-01*x**2  - 1.22551895e+00*x**1
          -8.99375602e-01)
     return z
+}
+
+function invStandardNormalLoss(l) {
+    // If extreme-valued, prefer exact
+    if ((l <= 0.01) || (l >= 1)) {
+        const {x, status} = invertFunction(standardNormalLoss, l)
+        console.log(l, x)
+        // if non-zero status, default to approx
+        if (status === 0) { return x }
+    }
+
+    return invStandardNormalLossApprox(l)
 }
 
 export { invNormalCDF, standardNormalLoss, invStandardNormalLoss }

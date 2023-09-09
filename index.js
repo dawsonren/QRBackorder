@@ -67,7 +67,7 @@ function cleanInputs(inputs, raiseError=true) {
     inputs['periodDemandMean'] = inputs.demandMean * inputs.reviewPeriod
     inputs['annualDemand'] = inputs.numPeriodsPerYear * inputs.demandMean
     inputs['holdingCost'] = inputs.purchasePrice * inputs.invCarryingRate
-    inputs['periodsPerYear'] = 365 / inputs.reviewPeriod
+    inputs['periodsPerYear'] = inputs.numPeriodsPerYear / inputs.reviewPeriod
 
     return inputs
 }
@@ -86,6 +86,39 @@ function mapTableValue(x) {
         // assume float, round to 2 decimal places
         return document.createTextNode(x.toFixed(2))
     }
+}
+
+function generateTooltip(text, tooltipText) {
+    const wrapper = document.createElement('div')
+    wrapper.classList.add('tooltip')
+
+    const content = document.createElement('span')
+    content.classList.add('tooltip-highlight')
+    content.appendChild(document.createTextNode(text))
+
+    const tooltip = document.createElement('span')
+    tooltip.classList.add('tooltip-text-above')
+    tooltip.appendChild(document.createTextNode(tooltipText))
+
+    wrapper.appendChild(content)
+    wrapper.appendChild(tooltip)
+
+    return wrapper
+}
+
+const tableNameToTooltipText = {
+    'Order Quantity Q = ': 'The number of units that must be ordered each time.',
+    'Reorder Point R = ': 'The reorder point. An order must be placed when the inventory position reaches this value.',
+    'Order Up To Level S = ': 'The level of inventory to order up to. The inventory order equals the difference between this value and the current level of inventory.',
+    'Reorder Point s = ': 'The reorder point. If inventory is below this value during inventory review, we reorder. Otherwise, we do not.',
+    'Average Inventory I = ': 'The average annual quantity remaining in inventory.',
+    'Average Flow Time T = ': 'The average duration a product stays in inventory in units of time.',
+    'Throughput TH = ': 'The average number of products going through the inventory in units of time.',
+    'Inventory Turn = ': 'The number of times the inventory replenishes in a year.',
+    'Average Annual Inventory Cost': 'The costs associated with holding the inventory.',
+    'Average Annual Backorder/Lost Sales Cost': 'The costs associated with  not satisfying a customer order (loss of profit, loss of goodwill, cost of having backorders)',
+    'Average Annual Setup Cost': 'The costs of ordering and transportation.',
+    'Total Average Annual Cost': 'The sum of average annual inventory, backorder/lost sales and order setup cost.'
 }
 
 function generateTable(tableHeaderText, tableData) {
@@ -119,7 +152,7 @@ function generateTable(tableHeaderText, tableData) {
             const valueRow = document.createElement('tr')
             const nameCell = document.createElement('td')
             const valueCell = document.createElement('td')
-            nameCell.appendChild(document.createTextNode(name))
+            nameCell.appendChild(generateTooltip(name, tableNameToTooltipText[name]))
             valueCell.classList.add('output-table-result-cell')
             valueCell.appendChild(mapTableValue(value))
             valueRow.appendChild(nameCell)
@@ -150,7 +183,7 @@ function constructTableDataMap(QS, Rs, I, T, TH, turns, invHoldingCost, backorde
 
     const costs = new Map()
     costs.set('Average Annual Inventory Cost', invHoldingCost)
-    costs.set('Average Annual Backorder Cost', backorderLostsalesCost)
+    costs.set('Average Annual Backorder/Lost Sales Cost', backorderLostsalesCost)
     costs.set('Average Annual Setup Cost', setupCost)
     costs.set('Total Average Annual Cost', totalCost)
 
@@ -776,8 +809,8 @@ function togglePeriodDetails(continuous) {
         savedReviewPeriodDetailsContainer = reviewPeriodDetailsContainer
         reviewPeriodDetailsContainer.remove()
     } else {
-        const inputContaineinput2s = document.getElementById('input-container-inputs')
-        inputContaineinput2s.appendChild(savedReviewPeriodDetailsContainer)
+        const inputContainerInputs = document.getElementById('input-container-inputs')
+        inputContainerInputs.appendChild(savedReviewPeriodDetailsContainer)
     }
 }
 
