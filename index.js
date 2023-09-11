@@ -772,10 +772,6 @@ async function downloadExcel() {
         schemas.push(tradeoffSchema(inputs.continuous, inputs.backorder, tradeoffInput.indepVariableText))
     }
 
-    console.log(datasets)
-    console.log(sheetNames)
-    console.log(schemas)
-
     await writeXlsxFile(datasets, {
         schema: schemas,
         sheets: sheetNames,

@@ -42,8 +42,8 @@ function standardNormalLoss(z) {
 }
 
 function invertFunction(func, y) {
-    let left = -1000000
-    let right = 1000000
+    let left = -1000
+    let right = 1000
     let tol = 0.00000001
     let max_iters = 200
     let iters = 0
@@ -59,8 +59,6 @@ function invertFunction(func, y) {
             right = mid;
         }
     }
-
-    console.log(y, left, right, iters)
 
     return {x: -1, status: 1}
 }
@@ -85,7 +83,6 @@ function invStandardNormalLoss(l) {
     // If extreme-valued, prefer exact
     if ((l <= 0.01) || (l >= 1)) {
         const {x, status} = invertFunction(standardNormalLoss, l)
-        console.log(l, x)
         // if non-zero status, default to approx
         if (status === 0) { return x }
     }

@@ -11,12 +11,20 @@ import { invNormalCDF, standardNormalLoss, invStandardNormalLoss } from './inven
 
 // corresponds with η(R) in the book
 function continuousFindAvgLostPerCycle(inputs, R) {
+    // for deterministic models
+    if (inputs.leadtimeDemandStdDev === 0) {
+        return Math.max(0, inputs.leadtimeDemandMean - R)
+    }
     const z = (R - inputs.leadtimeDemandMean) / inputs.leadtimeDemandStdDev
     return inputs.leadtimeDemandStdDev * standardNormalLoss(z)
 }
 
 // corresponds with η(S) in the book
 function periodicFindAvgLostPerCycle(inputs, S) {
+    // for deterministic models
+    if (inputs.leadtimeDemandStdDev === 0) {
+        return Math.max(0, inputs.leadtimeDemandMean - S)
+    }
     const z = (S - inputs.leadtimePeriodDemandMean) / inputs.leadtimePeriodDemandStdDev
     return inputs.leadtimePeriodDemandStdDev * standardNormalLoss(z)
 }
@@ -28,7 +36,10 @@ function findRFromQ(inputs, Q) {
     if (!inputs.backorder) {
         denom += inputs.holdingCost * Q
     }
-    console.log(1 - (inputs.holdingCost * Q / denom))
+    if (denom === 0) {
+        // deterministic demand
+        return inputs.leadtimeDemandMean
+    }
     const z = invNormalCDF(1 - (inputs.holdingCost * Q / denom))
     return inputs.leadtimeDemandMean + inputs.leadtimeDemandStdDev * z
 }
@@ -57,7 +68,6 @@ function continuousProcessFlowCalculations(Q, R, inputs) {
 function periodicProcessFlowCalculations(S, s, inputs) {
     const avgLossPerCycle = periodicFindAvgLostPerCycle(inputs, S)
     const annualDemand = inputs.numPeriodsPerYear * inputs.demandMean
-    // this is incorrect!
     let avgInv = inputs.periodDemandMean / 2 + S - inputs.leadtimePeriodDemandMean
     // lost sales?
     if (!inputs.backorder) {
@@ -121,13 +131,6 @@ function periodicCostCalculations(S, s, inputs) {
     const setupCost = inputs.invReviewCost * ordersPerYear
     const totalCost = invHoldingCost + backorderLostsalesCost + setupCost
 
-    console.log({
-        invHoldingCost,
-        backorderLostsalesCost,
-        setupCost,
-        totalCost
-    })
-
     return {
         invHoldingCost,
         backorderLostsalesCost,
@@ -154,12 +157,16 @@ function optimalContinuous(inputs) {
     // Step 0
     let Q_old = Math.sqrt(2 * inputs.orderSetupCost * inputs.annualDemand / inputs.holdingCost)
     let R_old = findRFromQ(inputs, Q_old)
+
+    // if EOQ (zero variability in leadtime and demand), then just return
+    if (inputs.leadtimeDemandStdDev === 0) {
+        return {Q: Q_old, R: R_old}
+    }
+
     let iters = 0
 
     while (true) {
         iters += 1
-
-        console.log(Q_old, R_old)
 
         // Step 1
         let backorderLostsalesLoss = inputs.backorderLostsalesCost * continuousFindAvgLostPerCycle(inputs, R_old)
@@ -182,9 +189,13 @@ function optimalContinuous(inputs) {
 function optimalS(inputs) {
     // when order setup cost is small
     let denom = inputs.backorderLostsalesCost
-    let timePeriod = 1 / inputs.periodsPerYear
+    let timePeriod = inputs.reviewPeriod / inputs.numPeriodsPerYear
     if (!inputs.backorder) {
         denom += inputs.holdingCost * timePeriod
+    }
+    if (inputs.leadtimeDemandStdDev === 0) {
+        // deterministic demand
+        return inputs.leadtimePeriodDemandMean
     }
     const p = 1 - (inputs.holdingCost / denom) * timePeriod
     const S = inputs.leadtimePeriodDemandMean + inputs.leadtimePeriodDemandStdDev * invNormalCDF(p)
@@ -235,6 +246,11 @@ function alphaPeriodic(inputs) {
 
 // generalizes
 function alpha(inputs) {
+    if (inputs.leadtimeDemandStdDev === 0) {
+        // deterministic demand
+        return optimal(inputs)
+    }
+
     if (inputs.continuous) {
         return alphaContinuous(inputs)
     } else {
@@ -266,6 +282,11 @@ function betaPeriodic(inputs) {
 
 // generalizes
 function beta(inputs) {
+    if (inputs.leadtimeDemandStdDev === 0) {
+        // deterministic demand
+        return optimal(inputs)
+    }
+
     if (inputs.continuous) {
         return betaContinuous(inputs)
     } else {
@@ -273,4 +294,4 @@ function beta(inputs) {
     }
 }
 
-export { processFlowCalculations, costCalculations, optimal, alpha, beta, continuousFindAvgLostPerCycle, findRFromQ }
+export { processFlowCalculations, costCalculations, optimal, alpha, beta, continuousFindAvgLostPerCycle, periodicFindAvgLostPerCycle, findRFromQ }
