@@ -540,13 +540,15 @@ const inputSchema = [
     {
         column: 'Input',
         type: String,
-        value: row => row.name
+        value: row => row.name,
+        width: 50
     },
     {
         column: 'Value',
         type: Number,
         format: '0.00',
-        value: row => row.value
+        value: row => row.value,
+        width: 20
     }
 ]
 
@@ -554,95 +556,134 @@ const outputSchema = (continuous, backorder) => [
     {
         column: 'Name',
         type: String,
-        value: row => row.name
+        value: row => row.name,
+        width: 35
     },
     {
         column: continuous ? 'Order Quantity Q' : 'Order Up To Level S',
         type: Number,
-        value: row => row.QS
+        value: row => row.QS,
+        width: 25
     },
     {
         column: continuous ? 'Reorder Point R' : 'Reorder Point s',
         type: Number,
-        value: row => row.Rs
+        value: row => row.Rs,
+        width: 25
     },
     {
         column: 'Average Inventory I',
         type: Number,
-        value: row => row.I
+        value: row => row.I,
+        width: 25
     },
     {
         column: 'Average Flow Time T',
         type: Number,
-        value: row => row.T
+        value: row => row.T,
+        width: 25
     },
     {
         column: 'Throughput TH',
         type: Number,
-        value: row => row.TH
+        value: row => row.TH,
+        width: 25
     },
     {
         column: 'Inventory Turn',
         type: Number,
-        value: row => row.turns
+        value: row => row.turns,
+        width: 25
     },
     {
         column: 'Average Annual Inventory Cost',
         type: Number,
-        value: row => row.invHoldingCost
+        value: row => row.invHoldingCost,
+        width: 30
     },
     {
         column: backorder ? 'Average Annual Backorder Cost' : 'Average Annual Lost Sales Cost',
         type: Number,
-        value: row => row.backorderLostsalesCost
+        value: row => row.backorderLostsalesCost,
+        width: 30
     },
     {
         column: 'Average Annual Setup Cost',
         type: Number,
-        value: row => row.setupCost
+        value: row => row.setupCost,
+        width: 30
     },
     {
         column: 'Total Average Annual Cost',
         type: Number,
-        value: row => row.totalCost
+        value: row => row.totalCost,
+        width: 30
     }
 ]
+
+const inputKeyToSpreadsheetName = {
+    'numPeriodsPerYear': 'Number of Periods Per Year',
+    'demandMean': 'Mean Demand per Unit Time',
+    'demandStdDev': 'Standard Deviation of Demand',
+    'leadtimeMean': 'Mean Leadtime',
+    'leadtimeStdDev': 'Standard Deviation of Leadtime',
+    'purchasePrice': 'Purchase Price',
+    'orderSetupCost': 'Order Setup Cost',
+    'backorderLostsalesCost': 'Backorder/Lost Sales Cost',
+    'invCarryingRate': 'Inventory Carrying Rate',
+    'reviewPeriod': 'Review Period',
+    'invReviewCost': 'Inventory Review Cost',
+    'leadtimeDemandMean': 'Mean Demand during Leadtime',
+    'leadtimeDemandStdDev': 'Standard Deviation of Demand over Leadtime',
+    'leadtimePeriodDemandMean': 'Mean Demand during Leadtime and a Period',
+    'leadtimePeriodDemandStdDev': 'Standard Deviation of Demand over Leadtime and a Period',
+    'periodDemandMean': 'Mean Demand over a Period',
+    'annualDemand': 'Demand per Year',
+    'holdingCost': 'Holding Cost per unit per year'
+}
 
 const tradeoffSchema = (continuous, backorder, indepVarText) => [
     {
         column: indepVarText,
         type: Number,
-        value: row => row.indepVarValue
+        value: row => row.indepVarValue,
+        width: 25
     },
     {
         column: continuous ? 'Order Quantity Q' : 'Order Up To Level S',
         type: Number,
-        value: row => row.QS
+        value: row => row.QS,
+        width: 25
     },
     {
         column: continuous ? 'Reorder Point R' : 'Reorder Point s',
         type: Number,
-        value: row => row.Rs
+        value: row => row.Rs,
+        width: 25
     },
     {
         column: 'Average Annual Inventory Cost',
         type: Number,
-        value: row => row.invHoldingCost
+        value: row => row.invHoldingCost,
+        width: 30
     },
     {
         column: backorder ? 'Average Annual Backorder Cost' : 'Average Annual Lost Sales Cost',
         type: Number,
-        value: row => row.backorderLostsalesCost
+        value: row => row.backorderLostsalesCost,
+        width: 30
     },
     {
         column: 'Average Annual Setup Cost',
         type: Number,
-        value: row => row.setupCost
+        value: row => row.setupCost,
+        width: 30
     },
     {
         column: 'Total Average Annual Cost',
         type: Number,
-        value: row => row.totalCost
+        value: row => row.totalCost,
+        width: 30
     }
 ]
 
@@ -655,8 +696,17 @@ async function downloadExcel() {
     // transform to inputs dataset
     const inputDataset = []
     for (let [key, value] of Object.entries(inputs)) {
+        // causes Excel to break if non-finite, expects a finite number
+        if (!isFinite(value)) { continue }
+
+        // ignore irrelevant rows
+        if (inputs.continuous && ['leadtimePeriodDemandMean', 'leadtimePeriodDemandStdDev', 'reviewPeriod', 'invReviewCost', 'periodDemandMean'].includes(key)) {
+            continue
+        }
+        if (['alpha', 'beta', 'backorder', 'continuous'].includes(key)) { continue }
+
         inputDataset.push({
-            name: key,
+            name: inputKeyToSpreadsheetName[key],
             value
         })
     }
