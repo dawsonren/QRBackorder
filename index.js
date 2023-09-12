@@ -273,13 +273,13 @@ function generatePolicyTable(inputs) {
     const policyInput = [NaN, NaN]
 
     const input1 = document.createElement('input')
-    const input2 = document.createElement('input')
     input1.classList.add('policy-input')
-    input2.classList.add('policy-input')
     input1.addEventListener('change', (e) => {
         policyInput[0] = parseFloat(e.target.value)
         generateRestOfPolicyTable(policyInput, inputs, policyTableDiv, input1, input2)
     })
+    const input2 = document.createElement('input')
+    input2.classList.add('policy-input')
     input2.addEventListener('change', (e) => {
         policyInput[1] = parseFloat(e.target.value)
         generateRestOfPolicyTable(policyInput, inputs, policyTableDiv, input1, input2)
