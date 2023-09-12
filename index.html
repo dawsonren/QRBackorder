@@ -34,20 +34,20 @@
               <div class="input-container-row">
                 <div class="input-container-row-item">
                   <div class="tooltip">
-                    <span class="input-container-row-header tooltip-highlight">Backorder/Lost Sales?</span>
+                    <label class="input-container-row-header tooltip-highlight" for="backorderOrLostSales">Backorder/Lost Sales?</label>
                     <span class="tooltip-text">The behavior of shortages in a period. If they carry over to the next period, use backorder. If not, then use lost sales.</span>
                   </div>
-                  <select name="backorderOrLostSales" id="backorderOrLostSales" label="Backorder or Lost Sales">
+                  <select name="backorderOrLostSales" id="backorderOrLostSales">
                     <option value="backorder">Backorder</option>
                     <option value="lostSales">Lost Sales</option>
                   </select>
                 </div>
                 <div class="input-container-row-item">
                   <div class="tooltip">
-                    <span class="input-container-row-header tooltip-highlight">Continuous/Periodic Review?</span>
+                    <label class="input-container-row-header tooltip-highlight" for="review">Continuous/Periodic Review?</label>
                     <span class="tooltip-text">When reorders can happen. If reorders can happen at any time, use continuous. If they occur at a fixed interval, use periodic.</span>
                   </div>
-                  <select name="review" id="review" label="Continuous or Periodic Review">
+                  <select name="review" id="review">
                     <option value="continuous">Continuous</option>
                     <option value="periodic">Periodic</option>
                   </select>
@@ -56,11 +56,11 @@
               <div class="input-container-row">
                 <div class="input-container-row-item">
                   <div class="tooltip">
-                    <span class="input-container-row-header tooltip-highlight">Number of Periods Per Year</span>
+                    <label class="input-container-row-header tooltip-highlight" for="numPeriodsInYear">Number of Periods Per Year</label>
                     <span class="tooltip-text">The number of periods in a year. For example, enter 52 for weeks.</span>
                   </div>
                   <div class="input-container-row-item-input">
-                    <input type="number" id="numPeriodsPerYear" label="Number of Periods Per Year"></input>
+                    <input type="number" id="numPeriodsPerYear" label="numPeriodsInYear"></input>
                     <p class="units">(ex. 52 for weeks)</p>
                   </div>
                 </div>
@@ -71,21 +71,21 @@
               <div class="input-container-row">
                 <div class="input-container-row-item">
                   <div class="tooltip">
-                    <span class="input-container-row-header tooltip-highlight">Mean</span>
+                    <label class="input-container-row-header tooltip-highlight" for="Mean Demand in a Period">Mean</label>
                     <span class="tooltip-text">The average amount of product demand in a period.</span>
                   </div>
                   <div class="input-container-row-item-input">
-                    <input type="number" id="demandMean" label="Mean Demand in a Period"></input>
+                    <input type="number" id="demandMean" name="Mean Demand in a Period"></input>
                     <p class="units">units/period</p>
                   </div>
                 </div>
                 <div class="input-container-row-item">
                   <div class="tooltip">
-                    <span class="input-container-row-header tooltip-highlight">Standard Deviation</span>
+                    <label class="input-container-row-header tooltip-highlight" for="Standard Deviation of Demand">Standard Deviation</label>
                     <span class="tooltip-text">The standard deviation of product demand in a period.</span>
                   </div>
                   <div class="input-container-row-item-input">
-                    <input type="number" id="demandStdDev" label="Standard Deviation of Demand"></input>
+                    <input type="number" id="demandStdDev" name="Standard Deviation of Demand"></input>
                     <p class="units">units/period</p>
                   </div>
                 </div>
@@ -96,21 +96,21 @@
               <div class="input-container-row">
                 <div class="input-container-row-item">
                   <div class="tooltip">
-                    <span class="input-container-row-header tooltip-highlight">Mean</span>
+                    <label class="input-container-row-header tooltip-highlight" for="Leadtime Mean">Mean</label>
                     <span class="tooltip-text">The average leadtime for a product.</span>
                   </div>
                   <div class="input-container-row-item-input">
-                    <input type="number" id="leadtimeMean" label="Leadtime Mean"></input>
+                    <input type="number" id="leadtimeMean" name="Leadtime Mean"></input>
                     <p class="units">periods</p>
                   </div>
                 </div>
                 <div class="input-container-row-item">
                   <div class="tooltip">
-                    <span class="input-container-row-header tooltip-highlight">Standard Deviation</span>
+                    <span class="input-container-row-header tooltip-highlight" for="Standard Deviation of Leadtime">Standard Deviation</span>
                     <span class="tooltip-text">The standard deviation of the leadtime for a product.</span>
                   </div>
                   <div class="input-container-row-item-input">
-                    <input type="number" id="leadtimeStdDev" label="Standard Deviation of Leadtime"></input>
+                    <input type="number" id="leadtimeStdDev" name="Standard Deviation of Leadtime"></input>
                     <p class="units">periods</p>
                   </div>
                 </div>
@@ -121,21 +121,21 @@
               <div class="input-container-row">
                 <div class="input-container-row-item">
                   <div class="tooltip">
-                    <span class="input-container-row-header tooltip-highlight">Purchase Price</span>
+                    <label class="input-container-row-header tooltip-highlight">Purchase Price</label>
                     <span class="tooltip-text">The purchase price of the item.</span>
                   </div>
                   <div class="input-container-row-item-input">
-                    <input type="number" id="purchasePrice" label="Purchase Price"></input>
+                    <input type="number" id="purchasePrice" name="Purchase Price"></input>
                     <p class="units">$/unit</p>
                   </div>
                 </div>
                 <div class="input-container-row-item">
                   <div class="tooltip">
-                    <span class="input-container-row-header tooltip-highlight">Order Setup Cost</span>
+                    <label class="input-container-row-header tooltip-highlight" for="Order Setup Cost">Order Setup Cost</label>
                     <span class="tooltip-text">The cost of placing an order, including shipment, transportation, etc.</span>
                   </div>
                   <div class="input-container-row-item-input">
-                    <input type="number" id="orderSetupCost" label="Order Setup Cost"></input>
+                    <input type="number" id="orderSetupCost" name="Order Setup Cost"></input>
                     <p class="units">$/order</p>
                   </div>
                 </div>
@@ -143,21 +143,21 @@
               <div class="input-container-row">
                 <div class="input-container-row-item">
                   <div class="tooltip">
-                    <span class="input-container-row-header tooltip-highlight">Backorder/Lost Sales Cost</span>
+                    <label class="input-container-row-header tooltip-highlight" for="Backorder/Lost Sales Cost">Backorder/Lost Sales Cost</label>
                     <span class="tooltip-text">Either the cost of a backorder or loss of profit, future sales, and goodwill.</span>
                   </div>
                   <div class="input-container-row-item-input">
-                    <input type="number" id="backorderLostsalesCost" label="Backorder/Lost Sales Cost"></input>
+                    <input type="number" id="backorderLostsalesCost" name="Backorder/Lost Sales Cost"></input>
                     <p class="units">$/unit</p>
                   </div>
                 </div>
                 <div class="input-container-row-item">
                   <div class="tooltip">
-                    <span class="input-container-row-header tooltip-highlight">Inventory Carrying Rate</span>
+                    <span class="input-container-row-header tooltip-highlight" for="Inventory Carrying Rate">Inventory Carrying Rate</span>
                     <span class="tooltip-text">The cost of holding $1 of inventory for a year.</span>
                   </div>
                   <div class="input-container-row-item-input">
-                    <input type="number" id="invCarryingRate" label="Inventory Carrying Rate"></input>
+                    <input type="number" id="invCarryingRate" name="Inventory Carrying Rate"></input>
                     <p class="units">%</p>
                   </div>
                 </div>
@@ -168,21 +168,21 @@
               <div class="input-container-row">
                 <div class="input-container-row-item">
                   <div class="tooltip">
-                    <span class="input-container-row-header tooltip-highlight">Cycle Service Level</span>
+                    <label class="input-container-row-header tooltip-highlight" for="Cycle Service Level">Cycle Service Level</label>
                     <span class="tooltip-text">The probability of not having a shortage in an order cycle.</span>
                   </div>
                   <div class="input-container-row-item-input">
-                    <input type="number" id="alpha" label="Cycle Service Level"></input>
+                    <input type="number" id="alpha" name="Cycle Service Level"></input>
                     <p class="units">%</p>
                   </div>
                 </div>
                 <div class="input-container-row-item">
                   <div class="tooltip">
-                    <span class="input-container-row-header tooltip-highlight">Fill Rate</span>
+                    <label class="input-container-row-header tooltip-highlight" for="Fill Rate">Fill Rate</label>
                     <span class="tooltip-text">The fraction of overall demand that do not face shortage.</span>
                   </div>
                   <div class="input-container-row-item-input">
-                    <input type="number" id="beta" label="Fill Rate"></input>
+                    <input type="number" id="beta" name="Fill Rate"></input>
                     <p class="units">%</p>
                   </div>
                 </div>
@@ -193,21 +193,21 @@
               <div class="input-container-row">
                 <div class="input-container-row-item">
                   <div class="tooltip">
-                    <span class="input-container-row-header tooltip-highlight">Review Period</span>
+                    <label class="input-container-row-header tooltip-highlight" for="Review Period">Review Period</label>
                     <class class="tooltip-text">The number of periods in between inventory reviews.</span>
                   </div>
                   <div class="input-container-row-item-input">
-                    <input type="number" id="reviewPeriod" label="Review Period"></input>
+                    <input type="number" id="reviewPeriod" name="Review Period"></input>
                     <p class="units">periods</p>
                   </div>
                 </div>
                 <div class="input-container-row-item">
                   <div class="tooltip">
-                    <span class="input-container-row-header tooltip-highlight">Inventory Review Cost</span>
+                    <label class="input-container-row-header tooltip-highlight" for="Inventory Review Cost">Inventory Review Cost</label>
                     <class class="tooltip-text">The cost of reviewing inventory.</span>
                   </div>
                   <div class="input-container-row-item-input">
-                    <input type="number" id="invReviewCost" label="Inventory Review Cost"></input>
+                    <input type="number" id="invReviewCost" name="Inventory Review Cost"></input>
                     <p class="units">$/period</p>
                   </div>
                 </div>
@@ -245,8 +245,8 @@
         <div class="collapsible-content">
           <div class="tradeoff-settings">
             <div class="select-variable tradeoff-settings-item">
-              <span class="tradeoff-settings-text">Tradeoff Against</span>
-              <select name="indepVariable" id="indepVariable" class="indep-variable" label="Independent Variable">
+              <span class="tradeoff-settings-text" for="Independent Variable">Tradeoff Against</span>
+              <select name="indepVariable" id="indepVariable" class="indep-variable" name="Independent Variable">
                 <option value="alpha">Cycle Service Level</option>
                 <option value="beta">Fill Rate</option>
                 <option value="demandMean">Demand Mean per Period</option>
@@ -260,10 +260,10 @@
               </select>
             </div>
             <div class="min-max-select tradeoff-settings-item">
-              <span class="tradeoff-settings-text">Min</span>
-              <input type="number" class="tradeoff-range" id="minRange" value="0.75" label="Minimum Value of Independent Variable"></input>
-              <span class="tradeoff-settings-text">Max</span>
-              <input type="number" class="tradeoff-range" id="maxRange" value="0.99" label="Maximum Value of Independent Variable"></input>
+              <label class="tradeoff-settings-text" for="Minimum Value of Independent Variable">Min</label>
+              <input type="number" class="tradeoff-range" id="minRange" value="0.75" name="Minimum Value of Independent Variable"></input>
+              <label class="tradeoff-settings-text" for="Maximum Value of Independent Variable">Max</label>
+              <input type="number" class="tradeoff-range" id="maxRange" value="0.99" name="Maximum Value of Independent Variable"></input>
               <label for="swapAxes" class="tradeoff-settings-text">Cost On X Axis</label>
               <input type="checkbox" id="swapAxes" class="swap-axes-input" name="swapAxes" label="Swap Axes?" />
             </div>

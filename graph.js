@@ -51,7 +51,8 @@ async function generateGraph(axisTitle, axisValues, invHoldingCost, backorderLos
             },
             options: {
                 indexAxis: swapAxes ? 'y' : 'x',
-                aspectRatio: 1 + ((window.innerWidth - 300) / window.screen.width),
+                // from a linear regression...not sure if there's a better way to do this
+                aspectRatio: Math.max(0.001181 * window.innerWidth + 0.251, 0.5),
                 plugins: {
                     title: {
                         display: true,
