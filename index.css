@@ -430,3 +430,15 @@ select {
 .credits-author-link:visited {
     color: #fff
 }
+
+.credits-author-link:link {
+    color: #fff
+}
+
+.credits-author-link:hover {
+    color: #fff
+}
+
+.credits-author-link:active {
+    color: #fff
+}
