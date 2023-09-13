@@ -106,7 +106,7 @@
                 </div>
                 <div class="input-container-row-item">
                   <div class="tooltip">
-                    <span class="input-container-row-header tooltip-highlight" for="leadtimeStdDev">Standard Deviation</span>
+                    <label class="input-container-row-header tooltip-highlight" for="leadtimeStdDev">Standard Deviation</label>
                     <span class="tooltip-text">The standard deviation of the leadtime for a product.</span>
                   </div>
                   <div class="input-container-row-item-input">
@@ -153,7 +153,7 @@
                 </div>
                 <div class="input-container-row-item">
                   <div class="tooltip">
-                    <span class="input-container-row-header tooltip-highlight" for="invCarryingRate">Inventory Carrying Rate</span>
+                    <label class="input-container-row-header tooltip-highlight" for="invCarryingRate">Inventory Carrying Rate</label>
                     <span class="tooltip-text">The cost of holding $1 of inventory for a year.</span>
                   </div>
                   <div class="input-container-row-item-input">
@@ -245,8 +245,8 @@
         <div class="collapsible-content">
           <div class="tradeoff-settings">
             <div class="select-variable tradeoff-settings-item">
-              <span class="tradeoff-settings-text" for="Independent Variable">Tradeoff Against</span>
-              <select name="indepVariable" id="indepVariable" class="indep-variable" name="Independent Variable">
+              <label class="tradeoff-settings-text" for="indep-variable">Tradeoff Against</label>
+              <select name="indepVariable" id="indepVariable" class="indep-variable" name="indepVariable">
                 <option value="alpha">Cycle Service Level</option>
                 <option value="beta">Fill Rate</option>
                 <option value="demandMean">Demand Mean per Period</option>
@@ -260,12 +260,12 @@
               </select>
             </div>
             <div class="min-max-select tradeoff-settings-item">
-              <label class="tradeoff-settings-text" for="Minimum Value of Independent Variable">Min</label>
-              <input type="number" class="tradeoff-range" id="minRange" value="0.75" name="Minimum Value of Independent Variable"></input>
-              <label class="tradeoff-settings-text" for="Maximum Value of Independent Variable">Max</label>
-              <input type="number" class="tradeoff-range" id="maxRange" value="0.99" name="Maximum Value of Independent Variable"></input>
-              <label for="swapAxes" class="tradeoff-settings-text">Cost On X Axis</label>
-              <input type="checkbox" id="swapAxes" class="swap-axes-input" name="swapAxes" label="Swap Axes?" />
+              <label class="tradeoff-settings-text" for="minRange">Min</label>
+              <input type="number" class="tradeoff-range" id="minRange" value="0.75" name="minRange"></input>
+              <label class="tradeoff-settings-text" for="maxRange">Max</label>
+              <input type="number" class="tradeoff-range" id="maxRange" value="0.99" name="maxRange"></input>
+              <label for="swapAxes" class="tradeoff-settings-text" for="swapAxes">Cost On X Axis</label>
+              <input type="checkbox" id="swapAxes" class="swap-axes-input" name="swapAxes" />
             </div>
             <div class="tradeoff-submit-and-error tradeoff-settings-item">
               <button class="tradeoff-submit" id="graph-submit" type="submit">Display Graph</button>
