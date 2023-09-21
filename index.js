@@ -342,7 +342,12 @@ function range(start, stop, step) {
 
 function getAxisForIndepVariable(graphInputs) {
     // Return a list of floats between min and max inputs that's reasonable
-    const step = 10 ** (Math.floor(Math.log10(graphInputs.maxValue - graphInputs.minValue)) - 1)
+    let span = graphInputs.maxValue - graphInputs.minValue
+    // handle when range is non-sensical
+    if (span <= 0) {
+        return range(graphInputs.minValue, graphInputs.minValue, 1)
+    }
+    const step = 10 ** (Math.floor(Math.log10(span)) - 1)
     return range(graphInputs.minValue, graphInputs.maxValue, step)
 }
 
@@ -725,8 +730,6 @@ async function downloadExcel() {
         })
     }
 
-    console.log('stop 1')
-
     // filename
     const cont = inputs.continuous ? 'Continuous' : 'Periodic'
     const back = inputs.backorder ? 'Backorder' : 'Lost Sales'
@@ -747,10 +750,15 @@ async function downloadExcel() {
         outputDataset.push({name: outputNames[i], QS: policyParam1, Rs: policyParam2, I, T, TH, turns, invHoldingCost, backorderLostsalesCost, setupCost, totalCost})
     }
 
-    console.log('stop 2')
-
-    // min/max are value * multFactor
-    const multFactor = 3
+    function createMaxValue(value) {
+        // if value isn't 0, then just triple it
+        if (value > 0) {
+            return value * 3
+        } else {
+            // otherwise, just return 3
+            return 3
+        }
+    }
 
     // Handle tradeoffs (graphInput objects)
     const tradeoffInputs = [
@@ -768,43 +776,43 @@ async function downloadExcel() {
         },
         {
             minValue: 0,
-            maxValue: inputs.demandMean * multFactor,
+            maxValue: createMaxValue(inputs.demandMean),
             indepVariableText: 'Demand Mean',
             indepVariableValue: 'demandMean'
         },
         {
             minValue: 0,
-            maxValue: inputs.demandStdDev * multFactor,
+            maxValue: createMaxValue(inputs.demandStdDev),
             indepVariableText: 'Demand Standard Deviation',
             indepVariableValue: 'demandStdDev'
         },
         {
             minValue: 0,
-            maxValue: inputs.leadtimeMean * multFactor,
+            maxValue: createMaxValue(inputs.leadtimeMean),
             indepVariableText: 'Leadtime Mean',
             indepVariableValue: 'leadtimeMean'
         },
         {
             minValue: 0,
-            maxValue: inputs.leadtimeStdDev * multFactor,
+            maxValue: createMaxValue(inputs.leadtimeStdDev),
             indepVariableText: 'Leadtime Standard Deviation',
             indepVariableValue: 'leadtimeStdDev'
         },
         {
             minValue: 0,
-            maxValue: inputs.purchasePrice * multFactor,
+            maxValue: createMaxValue(inputs.purchasePrice),
             indepVariableText: 'Purchase Price',
             indepVariableValue: 'purchasePrice'
         },
         {
             minValue: 0,
-            maxValue: inputs.orderSetupCost * multFactor,
+            maxValue: createMaxValue(inputs.orderSetupCost),
             indepVariableText: 'Order Setup Cost',
             indepVariableValue: 'orderSetupCost'
         },
         {
             minValue: 0,
-            maxValue: inputs.backorderLostsalesCost * multFactor,
+            maxValue: createMaxValue(inputs.backorderLostsalesCost),
             indepVariableText: 'Backorder or Lost Sales Cost',
             indepVariableValue: 'backorderLostsalesCost'
         },
@@ -823,49 +831,47 @@ async function downloadExcel() {
     for (let tradeoffInput of tradeoffInputs) {
         const {axisValues, policies, invHoldingCosts, backorderLostsalesCosts, orderSetupCosts, totalCosts} = getTradeoffData(rawInputs, tradeoffInput)
         const tradeoffDataset = []
-        // for (let i = 0; i < axisValues.length; i++) {
-        //     if (isNaN(totalCosts[i])) { continue }
-        //     tradeoffDataset.push({
-        //         indepVarValue: axisValues[i],
-        //         QS: inputs.continuous ? policies[i].Q : policies[i].S,
-        //         Rs: inputs.continuous ? policies[i].R : policies[i].s,
-        //         invHoldingCost: invHoldingCosts[i],
-        //         backorderLostsalesCost: backorderLostsalesCosts[i],
-        //         setupCost: orderSetupCosts[i],
-        //         totalCost: totalCosts[i]
-        //     })
-        // }
+        for (let i = 0; i < axisValues.length; i++) {
+            if (isNaN(totalCosts[i])) { continue }
+            tradeoffDataset.push({
+                indepVarValue: axisValues[i],
+                QS: inputs.continuous ? policies[i].Q : policies[i].S,
+                Rs: inputs.continuous ? policies[i].R : policies[i].s,
+                invHoldingCost: invHoldingCosts[i],
+                backorderLostsalesCost: backorderLostsalesCosts[i],
+                setupCost: orderSetupCosts[i],
+                totalCost: totalCosts[i]
+            })
+        }
         datasets.push(tradeoffDataset)
         sheetNames.push(`${tradeoffInput.indepVariableText}`)
         schemas.push(tradeoffSchema(inputs.continuous, inputs.backorder, tradeoffInput.indepVariableText))
     }
 
-    console.log('stop 3')
-
-    // await writeXlsxFile(datasets, {
-    //     schema: schemas,
-    //     sheets: sheetNames,
-    //     fileName: filename
-    // })
+    await writeXlsxFile(datasets, {
+        schema: schemas,
+        sheets: sheetNames,
+        fileName: filename
+    })
 }
 
 function fill() {
-    document.getElementById('numPeriodsPerYear').value = 360
-    document.getElementById('demandMean').value = 5
-    document.getElementById('demandStdDev').value = 2
-    document.getElementById('leadtimeMean').value = 2
+    document.getElementById('numPeriodsPerYear').value = 52
+    document.getElementById('demandMean').value = 1400
+    document.getElementById('demandStdDev').value = 300
+    document.getElementById('leadtimeMean').value = 3
     document.getElementById('leadtimeStdDev').value = 0
-    document.getElementById('purchasePrice').value = 12
-    document.getElementById('orderSetupCost').value = 0
-    document.getElementById('backorderLostsalesCost').value = 3
-    document.getElementById('invCarryingRate').value = 35
+    document.getElementById('purchasePrice').value = 0.2
+    document.getElementById('orderSetupCost').value = 80
+    document.getElementById('backorderLostsalesCost').value = 1.5
+    document.getElementById('invCarryingRate').value = 25
     document.getElementById('alpha').value = 98
-    document.getElementById('beta').value = 98
+    document.getElementById('beta').value = 95
     if (document.getElementById('reviewPeriod')) {
         document.getElementById('reviewPeriod').value = 10
     }
     if (document.getElementById('invReviewCost')) {
-        document.getElementById('invReviewCost').value = 0
+        document.getElementById('invReviewCost').value = 10
     }
 }
 
