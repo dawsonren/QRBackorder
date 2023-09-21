@@ -117,6 +117,29 @@ function continuousCostCalculations(Q, R, inputs) {
     }
 }
 
+function periodicSsCostCalculation(S, s, inputs) {
+    // TODO!!!!
+    const avgLossPerPeriod = periodicFindAvgLostPerCycle(inputs, S)
+    const ordersPerYear = inputs.numPeriodsPerYear / inputs.reviewPeriod
+    let avgInv = inputs.periodDemandMean / 2 + S - inputs.leadtimePeriodDemandMean
+    if (!inputs.backorder) {
+        avgInv += periodicFindAvgLostPerCycle(inputs, S)
+    }
+
+    const invHoldingCost = avgInv * inputs.holdingCost
+    const backorderLostsalesCost = inputs.backorderLostsalesCost * avgLossPerPeriod * ordersPerYear
+    // should we incorporate order setup cost into this? As in, inputs.orderSetupCost?
+    const setupCost = inputs.invReviewCost * ordersPerYear
+    const totalCost = invHoldingCost + backorderLostsalesCost + setupCost
+
+    return {
+        invHoldingCost,
+        backorderLostsalesCost,
+        setupCost,
+        totalCost
+    }
+}
+
 function periodicCostCalculations(S, s, inputs) {
     const avgLossPerPeriod = periodicFindAvgLostPerCycle(inputs, S)
     const ordersPerYear = inputs.numPeriodsPerYear / inputs.reviewPeriod

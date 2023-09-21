@@ -118,7 +118,9 @@ const tableNameToTooltipText = {
     'Average Annual Inventory Cost': 'The costs associated with holding the inventory.',
     'Average Annual Backorder/Lost Sales Cost': 'The costs associated with  not satisfying a customer order (loss of profit, loss of goodwill, cost of having backorders)',
     'Average Annual Setup Cost': 'The costs of ordering and transportation.',
-    'Total Average Annual Cost': 'The sum of average annual inventory, backorder/lost sales and order setup cost.'
+    'Total Average Annual Cost': 'The sum of average annual inventory, backorder/lost sales and order setup cost.',
+    'Cycle Service Level': 'The probability of not facing shortage in an order cycle.',
+    'Fill Rate': 'The fraction of demand that is satisfied immediately.'
 }
 
 function generateTable(tableHeaderText, tableData) {
@@ -856,22 +858,22 @@ async function downloadExcel() {
 }
 
 function fill() {
-    document.getElementById('numPeriodsPerYear').value = 52
-    document.getElementById('demandMean').value = 1400
-    document.getElementById('demandStdDev').value = 300
-    document.getElementById('leadtimeMean').value = 3
+    document.getElementById('numPeriodsPerYear').value = 360
+    document.getElementById('demandMean').value = 50
+    document.getElementById('demandStdDev').value = 15
+    document.getElementById('leadtimeMean').value = 5
     document.getElementById('leadtimeStdDev').value = 0
-    document.getElementById('purchasePrice').value = 0.2
-    document.getElementById('orderSetupCost').value = 80
-    document.getElementById('backorderLostsalesCost').value = 1.5
+    document.getElementById('purchasePrice').value = 9
+    document.getElementById('orderSetupCost').value = 60
+    document.getElementById('backorderLostsalesCost').value = 3
     document.getElementById('invCarryingRate').value = 25
     document.getElementById('alpha').value = 98
     document.getElementById('beta').value = 95
     if (document.getElementById('reviewPeriod')) {
-        document.getElementById('reviewPeriod').value = 10
+        document.getElementById('reviewPeriod').value = 21
     }
     if (document.getElementById('invReviewCost')) {
-        document.getElementById('invReviewCost').value = 10
+        document.getElementById('invReviewCost').value = 0
     }
 }
 
