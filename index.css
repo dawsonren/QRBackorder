@@ -43,12 +43,27 @@ select {
     border-bottom: black 1px solid;
 
     padding: 50px 7vw;
+    display: flex;
+    flex-direction: row;
+}
 
+/* For screen widths < 750px, set to column */
+@media screen and (max-width: 750px) {
+    .hero {
+        flex-direction: column;
+    }
+}
+
+.hero-image {
+    margin: 10px;
+    margin-right: 30px;
+}
+
+.hero-text {
     display: flex;
     align-items: center;
     justify-content: center;
     flex-direction: column;
-    text-align: center;
 }
 
 .hero-title {
@@ -248,20 +263,31 @@ select {
     }
 }
 
+.input-buttons {
+    display: flex;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
 .input-submit {
     background-color: #401F68;
     color: #fff;
     margin-left: 25px;
-    width: 150px;
+    width: 156px;
     height: 30px;
     border: none;
     font-size: 14px;
-    margin-bottom: 25px;
     transition: background-color 0.1s;
 }
 
 .input-submit:hover {
     background-color: #836EAA;
+}
+
+.fill-button {
+    width: 70px;
+    height: 30px;
+    margin-left: 5px;
 }
 
 .error {
@@ -279,6 +305,11 @@ select {
 .output-container {
     padding-top: 10px;
     padding-bottom: 10px;
+}
+
+.output-explanation {
+    margin: 10px 25px;
+    font-size: 14px;
 }
 
 .output-table-row {
@@ -417,6 +448,7 @@ select {
     display: flex;
     align-items: center;
     margin-top: 50px;
+    font-size: 14px;
 }
 
 .credits-body {

@@ -5,7 +5,7 @@ A policy is an object with float values for {Q, R} or {S, s}.
 We can calculate an optimal policy for min cost or to meet alpha/beta.
 Once we have an optimal policy, we can calculate both the process flow and cost information.
 */
-import { invNormalCDF, standardNormalLoss, invStandardNormalLoss } from './inventory-math'
+import { normalCDF, invNormalCDF, standardNormalLoss, invStandardNormalLoss } from './inventory-math'
 
 /* Helper Functions */
 
@@ -145,6 +145,41 @@ function costCalculations(policy, inputs) {
         return continuousCostCalculations(policy.Q, policy.R, inputs)
     } else {
         return periodicCostCalculations(policy.S, policy.s, inputs)
+    }
+}
+
+/* Find service levels */
+function cycleServiceLevelContinuous(Q, R, inputs) {
+    return normalCDF((R - inputs.leadtimeDemandMean) / inputs.leadtimeDemandStdDev)
+}
+
+function cycleServiceLevelPeriodic(S, s, inputs) {
+    return normalCDF((S - inputs.leadtimePeriodDemandMean) / inputs.leadtimePeriodDemandStdDev)
+}
+
+function fillRateContinuous(Q, R, inputs) {
+    const shortage = continuousFindAvgLostPerCycle(inputs, R)
+    return inputs.backorder ? 1 - (shortage / Q) : 1 - (shortage / (shortage + Q))
+}
+
+function fillRatePeriodic(S, s, inputs) {
+    return 1 - (periodicFindAvgLostPerCycle(inputs, S) / inputs.leadtimePeriodDemandMean)
+}
+
+// generalizes
+function cycleServiceLevel(policy, inputs) {
+    if (inputs.continuous) {
+        return cycleServiceLevelContinuous(policy.Q, policy.R, inputs)
+    } else {
+        return cycleServiceLevelPeriodic(policy.S, policy.s, inputs)
+    }
+}
+
+function fillRate(policy, inputs) {
+    if (inputs.continuous) {
+        return fillRateContinuous(policy.Q, policy.R, inputs)
+    } else {
+        return fillRatePeriodic(policy.S, policy.s, inputs)
     }
 }
 
@@ -294,4 +329,4 @@ function beta(inputs) {
     }
 }
 
-export { processFlowCalculations, costCalculations, optimal, alpha, beta, continuousFindAvgLostPerCycle, periodicFindAvgLostPerCycle, findRFromQ }
+export { processFlowCalculations, costCalculations, optimal, alpha, beta, continuousFindAvgLostPerCycle, periodicFindAvgLostPerCycle, findRFromQ, cycleServiceLevel, fillRate }

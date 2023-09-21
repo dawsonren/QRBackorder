@@ -19,8 +19,13 @@
       <h1 class="header-title">Operations Engineering and Management | Inventory Management Calculator</h1>
     </header>
     <section class="hero">
-      <h1 class="hero-title">Computing Optimal Order Size and Reorder Point for Continuous and Periodic Review Inventory Systems</h1>
-      <h2 class="hero-description">Businesses need to decide how much inventory to hold to avoid excess inventory costs while providing the right level of service to customers. The total costs are made up of the inventory cost, the order setup cost, and the backorder/lost sales cost. The service level is measured either by alpha (probability of all orders in a demand period fulfilled without delay) or beta (probability any given order is fulfilled without delay). Assume that leadtime is normally distributed and is less than the time between orders.</h2>
+      <div class="hero-image">
+        <img src="book.png">
+      </div>
+      <div class="hero-text">
+        <h1 class="hero-title">Chapters 9 and 10 - Computing Optimal Order Size and Reorder Point for Continuous and Periodic Review Inventory Systems</h1>
+        <h2 class="hero-description">Businesses need to decide how much inventory to hold to avoid excess inventory costs while providing the right level of service to customers. The total costs are made up of the inventory cost, the order setup cost, and the backorder/lost sales cost. The service level is measured either by the cycle service level (the probability of not facing shortage in an order cycle) or fill rate (the fraction of demand that is satisfied immediately). This calculator assumes that the demand during lead time is normally distributed and the chance of having more than one outstanding order is negligible.</h2>  
+      </div>
     </section>
     <section class="input center-section">
       <div class="input-container container">
@@ -214,9 +219,11 @@
               </div>
             </div>
           </div>
-          <button class="input-submit" id="input-submit" type="submit">Calculate Policies</button>
-          <span id="input-error" class="error"></span>
-          <button id="fill">Fill Data</button>
+          <div class="input-buttons">
+            <button class="input-submit" id="input-submit" type="submit">Calculate Policies</button>
+            <button id="fill" class="fill-button">Fill Data</button>
+            <span id="input-error" class="error"></span>
+          </div>
         </div>
       </div>
     </section>
@@ -225,7 +232,8 @@
         <button type="button" class="collapsible-container-header">
           <h2>Outputs</h2>
         </button>
-        <div class="collapsible-content output-container">
+        <div class="collapsible-content output-container" id="output-container">
+          <div class="output-explanation" id="output-explanation"></div>
           <div class="output-table-row">
             <div id="min-table" class="output-table-div"></div>
             <div id="alpha-table" class="output-table-div"></div>

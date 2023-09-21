@@ -44,8 +44,8 @@ function standardNormalLoss(z) {
 function invertFunction(func, y) {
     let left = -1000
     let right = 1000
-    let tol = 0.00000001
-    let max_iters = 200
+    let tol = 0.00001
+    let max_iters = 20
     let iters = 0
 
     while ((left <= right) && (iters <= max_iters)) {
@@ -90,4 +90,4 @@ function invStandardNormalLoss(l) {
     return invStandardNormalLossApprox(l)
 }
 
-export { invNormalCDF, standardNormalLoss, invStandardNormalLoss }
+export { normalCDF, invNormalCDF, standardNormalLoss, invStandardNormalLoss }

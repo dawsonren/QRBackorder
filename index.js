@@ -1,5 +1,5 @@
 import writeXlsxFile from 'write-excel-file'
-import { processFlowCalculations, costCalculations, optimal, alpha, beta } from './calculations.js'
+import { processFlowCalculations, costCalculations, optimal, alpha, beta, cycleServiceLevel, fillRate } from './calculations.js'
 import { generateGraph } from './graph.js'
 // import fonts so we don't have to get it from Google Fonts CDN
 import '@fontsource/oswald/200.css'
@@ -166,14 +166,16 @@ function generateTable(tableHeaderText, tableData) {
     return tbl
 }
 
-function constructTableDataMap(QS, Rs, I, T, TH, turns, invHoldingCost, backorderLostsalesCost, setupCost, totalCost, continuous) {
+function constructTableDataMap(QS, Rs, I, T, TH, turns, invHoldingCost, backorderLostsalesCost, setupCost, totalCost, Ss, isPolicyTable, inputs) {
     // QS is Q or S, Rs is R or s
     // continuous is a boolean for whether or not the problem is continuous
     const optTableData = new Map()
 
     const invPolicy = new Map()
-    invPolicy.set(continuous ? 'Order Quantity Q = ' : 'Order Up To Level S = ', QS)
-    invPolicy.set(continuous ? 'Reorder Point R = ' : 'Reorder Point s = ', Rs)
+    invPolicy.set(inputs.continuous ? 'Order Quantity Q = ' : 'Order Up To Level S = ', QS)
+    if (inputs.continuous || Ss) {
+        invPolicy.set(inputs.continuous ? 'Reorder Point R = ' : 'Reorder Point s = ', Rs)
+    }
 
     const processFlowMeasures = new Map()
     processFlowMeasures.set('Average Inventory I = ', I)
@@ -187,14 +189,25 @@ function constructTableDataMap(QS, Rs, I, T, TH, turns, invHoldingCost, backorde
     costs.set('Average Annual Setup Cost', setupCost)
     costs.set('Total Average Annual Cost', totalCost)
 
+    let serviceLevels = new Map()
+    if (isPolicyTable) {
+        const policy = inputs.continuous ? {Q: parseFloat(QS.value), R: parseFloat(Rs.value)} : {S: parseFloat(QS.value), s: parseFloat(Rs.value)}
+        const empty = I === ''
+        serviceLevels.set('Cycle Service Level', !empty ? cycleServiceLevel(policy, inputs) : '')
+        serviceLevels.set('Fill Rate', !empty ? fillRate(policy, inputs) : '')
+    }
+
     optTableData.set('Inventory Policy', invPolicy)
     optTableData.set('Process Flow Measures', processFlowMeasures)
     optTableData.set('Costs', costs)
+    if (isPolicyTable) {
+        optTableData.set('Service Levels', serviceLevels)
+    }
     
     return optTableData
 }
 
-function generateTableData(policy, inputs) {
+function generateTableData(policy, inputs, Ss=false) {
     /*
         processFlow: (Q, R, inputs) => {I, T, TH, turns}
         costCalculations: (Q, R, inputs) => {invHoldingCost, backorderOrCost, setupCost, totalCost}
@@ -204,7 +217,7 @@ function generateTableData(policy, inputs) {
     const policyParam1 = inputs.continuous ? policy.Q : policy.S
     const policyParam2 = inputs.continuous ? policy.R : policy.s
 
-    return constructTableDataMap(policyParam1, policyParam2, I, T, TH, turns, invHoldingCost, backorderLostsalesCost, setupCost, totalCost, inputs.continuous)
+    return constructTableDataMap(policyParam1, policyParam2, I, T, TH, turns, invHoldingCost, backorderLostsalesCost, setupCost, totalCost, Ss, false, inputs)
 }
 
 function generateTables(inputs) {
@@ -218,7 +231,7 @@ function generateTables(inputs) {
 
     // min cost
     const minCostPolicy = optimal(inputs)
-    const minCostTableData = generateTableData(minCostPolicy, inputs)
+    const minCostTableData = generateTableData(minCostPolicy, inputs, inputs.orderSetupCost !== 0)
     const minCostTable = generateTable('Minimizing Total Average Annual Cost', minCostTableData)
     minTableDiv.appendChild(minCostTable)
 
@@ -254,13 +267,14 @@ function generateRestOfPolicyTable(policyInput, inputs, policyTableDiv, input1, 
     let policyTableData
 
     const policy = arrayToPolicy(policyInput, inputs)
-    if (isFinite(policyInput[0]) && isFinite(policyInput[1])) {
+    // we only use the second input (policyInput[1]) for (Q, R) policies for continuous
+    if (isFinite(policyInput[0]) && (isFinite(policyInput[1]) || !inputs.continuous)) {
         const {I, T, TH, turns} = processFlowCalculations(policy, inputs)
         const {invHoldingCost, backorderLostsalesCost, setupCost, totalCost} = costCalculations(policy, inputs)
-        policyTableData = constructTableDataMap(input1, input2, I, T, TH, turns, invHoldingCost, backorderLostsalesCost, setupCost, totalCost, inputs.continuous)
+        policyTableData = constructTableDataMap(input1, input2, I, T, TH, turns, invHoldingCost, backorderLostsalesCost, setupCost, totalCost, false, true, inputs)
     } else {
         // create empty table if not
-        policyTableData = constructTableDataMap(input1, input2, '', '', '', '', '', '', '', '', inputs.continuous)
+        policyTableData = constructTableDataMap(input1, input2, '', '', '', '', '', '', '', '', false, true, inputs)
     }
     const policyTable = generateTable('Performance Measures for Given Policy', policyTableData, inputs.continuous)
     policyTableDiv.appendChild(policyTable)
@@ -328,27 +342,8 @@ function range(start, stop, step) {
 
 function getAxisForIndepVariable(graphInputs) {
     // Return a list of floats between min and max inputs that's reasonable
-    if (['alpha', 'beta'].includes(graphInputs.indepVariableValue)) {
-        return range(graphInputs.minValue, graphInputs.maxValue, 0.01)
-    } else {
-        // we want somewhere between 10 and 100 values, adjust until we get there
-        let step = 1
-        let diff = graphInputs.maxValue - graphInputs.minValue
-        let values = diff / step
-
-        while (values < 10 || values > 100) {
-            // adjust step size
-            if (values < 10) {
-                step /= 10
-            } else {
-                step *= 10
-            }
-
-            // recalculate number of values
-            values = diff / step
-        }
-        return range(graphInputs.minValue, graphInputs.maxValue, step)
-    }
+    const step = 10 ** (Math.floor(Math.log10(graphInputs.maxValue - graphInputs.minValue)) - 1)
+    return range(graphInputs.minValue, graphInputs.maxValue, step)
 }
 
 function getTradeoffData(rawInputs, graphInputs) {
@@ -428,7 +423,7 @@ function generateTradeoffTable(rawInputs, tradeoffData) {
     const headRow = document.createElement('tr')
     const head = document.createElement('th')
     head.setAttribute('colspan', 7)
-    head.appendChild(document.createTextNode(`Cost as a Function of ${axisTitle}`))
+    head.appendChild(document.createTextNode(`Average Annual Cost as a Function of ${axisTitle}`))
     head.classList.add('tradeoff-table-title')
     headRow.appendChild(head)
     tblHead.appendChild(headRow)
@@ -461,7 +456,7 @@ function generateTradeoffTable(rawInputs, tradeoffData) {
 
         for (let value of tableValues[i]) {
             const valueCell = document.createElement('td')
-            valueCell.appendChild(document.createTextNode(value.toFixed(2)))
+            valueCell.appendChild(document.createTextNode(parseFloat(value.toFixed(3))))
             valueCell.classList.add('tradeoff-table-data')
             valueRow.appendChild(valueCell)
         }
@@ -482,6 +477,22 @@ function generateTradeoffGraph(inputs, tradeoffData) {
     const {axisTitle, axisValues, invHoldingCosts, backorderLostsalesCosts, orderSetupCosts, totalCosts} = tradeoffData
     const swapAxes = document.getElementById('swapAxes').checked
     generateGraph(axisTitle, axisValues, invHoldingCosts, backorderLostsalesCosts, orderSetupCosts, totalCosts, inputs.backorder, swapAxes)
+}
+
+function generateOutputText(inputs) {
+    const outputExplanation = document.getElementById('output-explanation')
+    outputExplanation.innerHTML = ''
+
+    const text = (
+        inputs.continuous ?
+        'In a (Q, R) policy, Q is the order quantity and R is the reorder point. The inventory level is continuously monitored, and once it reaches R units, an order is placed for Q more units.' :
+        (inputs.orderSetupCost === 0 ?
+            'In an S policy (also known as an Order-Up-To Policy with Base Stock), S is the order-up-to level. During inventory review, enough inventory is ordered to bring the inventory position back up to the order-up-to level.' :
+            'In an (S, s) policy (also known as an Order-Up-To Policy with Reorder Point), S is the order-up-to level and s is the reorder point. During inventory review, if the inventory level is below s, enough inventory is ordered to bring the inventory position back up to the order-up-to level. Otherwise, no inventory is ordered. An (S, s) policy with s = S is equivalent to an S policy.'
+        )
+    )
+
+    outputExplanation.appendChild(document.createTextNode(text))
 }
   
 function calculate() {
@@ -508,6 +519,9 @@ function calculate() {
         behavior: 'smooth',
         inline: 'center'
     });
+
+    // text for outputs
+    generateOutputText(inputs)
 }
 
 function rawInputsAreValid(rawInputs) {
@@ -711,6 +725,8 @@ async function downloadExcel() {
         })
     }
 
+    console.log('stop 1')
+
     // filename
     const cont = inputs.continuous ? 'Continuous' : 'Periodic'
     const back = inputs.backorder ? 'Backorder' : 'Lost Sales'
@@ -731,7 +747,9 @@ async function downloadExcel() {
         outputDataset.push({name: outputNames[i], QS: policyParam1, Rs: policyParam2, I, T, TH, turns, invHoldingCost, backorderLostsalesCost, setupCost, totalCost})
     }
 
-    // min/max are value / divFactor and value * multFactor
+    console.log('stop 2')
+
+    // min/max are value * multFactor
     const multFactor = 3
 
     // Handle tradeoffs (graphInput objects)
@@ -805,47 +823,49 @@ async function downloadExcel() {
     for (let tradeoffInput of tradeoffInputs) {
         const {axisValues, policies, invHoldingCosts, backorderLostsalesCosts, orderSetupCosts, totalCosts} = getTradeoffData(rawInputs, tradeoffInput)
         const tradeoffDataset = []
-        for (let i = 0; i < axisValues.length; i++) {
-            if (isNaN(totalCosts[i])) { continue }
-            tradeoffDataset.push({
-                indepVarValue: axisValues[i],
-                QS: inputs.continuous ? policies[i].Q : policies[i].S,
-                Rs: inputs.continuous ? policies[i].R : policies[i].s,
-                invHoldingCost: invHoldingCosts[i],
-                backorderLostsalesCost: backorderLostsalesCosts[i],
-                setupCost: orderSetupCosts[i],
-                totalCost: totalCosts[i]
-            })
-        }
+        // for (let i = 0; i < axisValues.length; i++) {
+        //     if (isNaN(totalCosts[i])) { continue }
+        //     tradeoffDataset.push({
+        //         indepVarValue: axisValues[i],
+        //         QS: inputs.continuous ? policies[i].Q : policies[i].S,
+        //         Rs: inputs.continuous ? policies[i].R : policies[i].s,
+        //         invHoldingCost: invHoldingCosts[i],
+        //         backorderLostsalesCost: backorderLostsalesCosts[i],
+        //         setupCost: orderSetupCosts[i],
+        //         totalCost: totalCosts[i]
+        //     })
+        // }
         datasets.push(tradeoffDataset)
         sheetNames.push(`${tradeoffInput.indepVariableText}`)
         schemas.push(tradeoffSchema(inputs.continuous, inputs.backorder, tradeoffInput.indepVariableText))
     }
 
-    await writeXlsxFile(datasets, {
-        schema: schemas,
-        sheets: sheetNames,
-        fileName: filename
-    })
+    console.log('stop 3')
+
+    // await writeXlsxFile(datasets, {
+    //     schema: schemas,
+    //     sheets: sheetNames,
+    //     fileName: filename
+    // })
 }
 
 function fill() {
     document.getElementById('numPeriodsPerYear').value = 360
-    document.getElementById('demandMean').value = 50
-    document.getElementById('demandStdDev').value = 15
-    document.getElementById('leadtimeMean').value = 5
-    document.getElementById('leadtimeStdDev').value = 2
-    document.getElementById('purchasePrice').value = 9
-    document.getElementById('orderSetupCost').value = 60
+    document.getElementById('demandMean').value = 5
+    document.getElementById('demandStdDev').value = 2
+    document.getElementById('leadtimeMean').value = 2
+    document.getElementById('leadtimeStdDev').value = 0
+    document.getElementById('purchasePrice').value = 12
+    document.getElementById('orderSetupCost').value = 0
     document.getElementById('backorderLostsalesCost').value = 3
-    document.getElementById('invCarryingRate').value = 20
-    document.getElementById('alpha').value = 90
-    document.getElementById('beta').value = 99
+    document.getElementById('invCarryingRate').value = 35
+    document.getElementById('alpha').value = 98
+    document.getElementById('beta').value = 98
     if (document.getElementById('reviewPeriod')) {
-        document.getElementById('reviewPeriod').value = 30
+        document.getElementById('reviewPeriod').value = 10
     }
     if (document.getElementById('invReviewCost')) {
-        document.getElementById('invReviewCost').value = 10
+        document.getElementById('invReviewCost').value = 0
     }
 }
 
