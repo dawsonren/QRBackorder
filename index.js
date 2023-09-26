@@ -240,7 +240,7 @@ function generateTables(inputs) {
     const minTableDiv = document.createElement('div')
     minTableDiv.classList.add('min-table')
     const minCostPolicy = optimal(inputs)
-    const minCostTableData = generateTableData(minCostPolicy, inputs, !inputs.eoq, true)
+    const minCostTableData = generateTableData(minCostPolicy, inputs, true, true)
     const minCostTable = generateTable('Minimizing Total Average Annual Cost', minCostTableData)
     minTableDiv.appendChild(minCostTable)
     minTableDiv.classList.add('output-table-div')
@@ -296,10 +296,10 @@ function generateRestOfPolicyTable(policyInput, inputs, input1, input2) {
     if (isFinite(policyInput[0]) && (isFinite(policyInput[1]) || !inputs.continuous)) {
         const {I, T, TH, turns} = processFlowCalculations(policy, inputs)
         const {invHoldingCost, backorderLostsalesCost, setupCost, totalCost} = costCalculations(policy, inputs)
-        policyTableData = constructTableDataMap(input1, input2, I, T, TH, turns, invHoldingCost, backorderLostsalesCost, setupCost, totalCost, !inputs.eoq, inputs)
+        policyTableData = constructTableDataMap(input1, input2, I, T, TH, turns, invHoldingCost, backorderLostsalesCost, setupCost, totalCost, true, inputs)
     } else {
         // create empty table if not
-        policyTableData = constructTableDataMap(input1, input2, '', '', '', '', '', '', '', '', !inputs.eoq, inputs)
+        policyTableData = constructTableDataMap(input1, input2, '', '', '', '', '', '', '', '', true, inputs)
     }
     return generateTable('Performance Measures for Given Policy', policyTableData, inputs.continuous)
 }
