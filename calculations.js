@@ -118,7 +118,6 @@ function continuousCostCalculations(Q, R, inputs) {
 }
 
 function periodicSsCostCalculation(S, s, inputs) {
-    // TODO!!!!
     const avgLossPerPeriod = periodicFindAvgLostPerCycle(inputs, S)
     const ordersPerYear = inputs.numPeriodsPerYear / inputs.reviewPeriod
     let avgInv = inputs.periodDemandMean / 2 + S - inputs.leadtimePeriodDemandMean

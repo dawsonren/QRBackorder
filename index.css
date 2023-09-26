@@ -173,7 +173,8 @@ select {
     border-radius: 6px 6px 6px 0px;
     width: 120px;
     bottom: 150%;
-    left: 0%;
+    /* Because we only use this in the table and the table entries are indented */
+    left: 5px;
    
     position: absolute;
     z-index: 100;
@@ -312,26 +313,26 @@ select {
     font-size: 14px;
 }
 
-.output-table-row {
+.output-tables {
     display: flex;
+    flex-wrap: wrap;
     flex-direction: row;
 }
 
-/* For screen widths < 750px, set to column */
-@media screen and (max-width: 850px) {
-    .output-table-row {
-        display: flex;
+.output-table-div {
+    margin: 10px 2px 2px 25px;
+    min-width: calc(50% - 40px);
+}
+
+@media screen and (max-width: 750px) {
+    .output-tables {
         flex-direction: column;
     }
-}
 
-.output-table-div {
-    margin: 5px 25px;
-    min-width: calc(50% - 50px);
-}
-
-.output-table-row-group {
-    border-top: 1px #000 solid;
+    .output-table-div {
+        margin: 5px 25px;
+        min-width: 0;
+    }
 }
 
 .output-table {
@@ -342,10 +343,15 @@ select {
 .output-table-header {
     text-align: left;
     font-size: 16px;
+    border-bottom: 1px solid black;
 }
 
 .output-table-section-header {
     font-size: 14px;
+}
+
+.output-table-data-row {
+    text-indent: 5px;
 }
 
 .output-table-result-cell {

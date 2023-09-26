@@ -18,8 +18,9 @@ function getRawInputs() {
         orderSetupCost: document.getElementById('orderSetupCost').value,
         backorderLostsalesCost: document.getElementById('backorderLostsalesCost').value,
         invCarryingRate: document.getElementById('invCarryingRate').value / 100,
-        alpha: document.getElementById('alpha').value / 100,
-        beta: document.getElementById('beta').value / 100,
+        // -1s serve as null values
+        alpha: document.getElementById('alpha') ? document.getElementById('alpha').value / 100 : -1,
+        beta: document.getElementById('beta') ? document.getElementById('beta').value / 100 : -1,
         // 0/1 serve as booleans
         backorder: document.getElementById('backorderOrLostSales').value === 'backorder' ? 1 : 0,
         continuous: document.getElementById('review').value === 'continuous' ? 1 : 0,
@@ -68,6 +69,10 @@ function cleanInputs(inputs, raiseError=true) {
     inputs['annualDemand'] = inputs.numPeriodsPerYear * inputs.demandMean
     inputs['holdingCost'] = inputs.purchasePrice * inputs.invCarryingRate
     inputs['periodsPerYear'] = inputs.numPeriodsPerYear / inputs.reviewPeriod
+    // is an eoq model?
+    inputs['eoq'] = inputs.continuous && inputs.demandStdDev === 0 && inputs.leadtimeStdDev === 0
+    // is an order-up-to model?
+    inputs['S'] = !inputs.continuous && inputs.orderSetupCost === 0
 
     return inputs
 }
@@ -142,7 +147,6 @@ function generateTable(tableHeaderText, tableData) {
     for (const [sectionHeaderText, sectionHeaderData] of tableData.entries()) {
         // create section header
         const sectionHeaderRow = document.createElement('tr')
-        sectionHeaderRow.classList.add('output-table-row-group')
         const sectionHeader = document.createElement('td')
         sectionHeader.setAttribute('colspan', 2)
         sectionHeader.appendChild(document.createTextNode(sectionHeaderText))
@@ -152,6 +156,7 @@ function generateTable(tableHeaderText, tableData) {
 
         for (const [name, value] of sectionHeaderData.entries()) {
             const valueRow = document.createElement('tr')
+            valueRow.classList.add('output-table-data-row')
             const nameCell = document.createElement('td')
             const valueCell = document.createElement('td')
             nameCell.appendChild(generateTooltip(name, tableNameToTooltipText[name]))
@@ -168,14 +173,14 @@ function generateTable(tableHeaderText, tableData) {
     return tbl
 }
 
-function constructTableDataMap(QS, Rs, I, T, TH, turns, invHoldingCost, backorderLostsalesCost, setupCost, totalCost, Ss, isPolicyTable, inputs) {
+function constructTableDataMap(QS, Rs, I, T, TH, turns, invHoldingCost, backorderLostsalesCost, setupCost, totalCost, includeServiceLevels, inputs, isMinCost=false) {
     // QS is Q or S, Rs is R or s
     // continuous is a boolean for whether or not the problem is continuous
     const optTableData = new Map()
 
     const invPolicy = new Map()
     invPolicy.set(inputs.continuous ? 'Order Quantity Q = ' : 'Order Up To Level S = ', QS)
-    if (inputs.continuous || Ss) {
+    if (inputs.continuous || isMinCost) {
         invPolicy.set(inputs.continuous ? 'Reorder Point R = ' : 'Reorder Point s = ', Rs)
     }
 
@@ -192,8 +197,14 @@ function constructTableDataMap(QS, Rs, I, T, TH, turns, invHoldingCost, backorde
     costs.set('Total Average Annual Cost', totalCost)
 
     let serviceLevels = new Map()
-    if (isPolicyTable) {
-        const policy = inputs.continuous ? {Q: parseFloat(QS.value), R: parseFloat(Rs.value)} : {S: parseFloat(QS.value), s: parseFloat(Rs.value)}
+    if (includeServiceLevels) {
+        let policy
+        if (typeof QS === 'object') {
+            policy = inputs.continuous ? {Q: parseFloat(QS.value), R: parseFloat(Rs.value)} : {S: parseFloat(QS.value), s: parseFloat(Rs.value)}
+        } else {
+            policy = inputs.continuous ? {Q: QS, R: Rs} : {S: QS, s: Rs}
+        }
+        
         const empty = I === ''
         serviceLevels.set('Cycle Service Level', !empty ? cycleServiceLevel(policy, inputs) : '')
         serviceLevels.set('Fill Rate', !empty ? fillRate(policy, inputs) : '')
@@ -202,14 +213,14 @@ function constructTableDataMap(QS, Rs, I, T, TH, turns, invHoldingCost, backorde
     optTableData.set('Inventory Policy', invPolicy)
     optTableData.set('Process Flow Measures', processFlowMeasures)
     optTableData.set('Costs', costs)
-    if (isPolicyTable) {
+    if (includeServiceLevels) {
         optTableData.set('Service Levels', serviceLevels)
     }
     
     return optTableData
 }
 
-function generateTableData(policy, inputs, Ss=false) {
+function generateTableData(policy, inputs, includeServiceLevels=false, isMinCost=false) {
     /*
         processFlow: (Q, R, inputs) => {I, T, TH, turns}
         costCalculations: (Q, R, inputs) => {invHoldingCost, backorderOrCost, setupCost, totalCost}
@@ -219,35 +230,47 @@ function generateTableData(policy, inputs, Ss=false) {
     const policyParam1 = inputs.continuous ? policy.Q : policy.S
     const policyParam2 = inputs.continuous ? policy.R : policy.s
 
-    return constructTableDataMap(policyParam1, policyParam2, I, T, TH, turns, invHoldingCost, backorderLostsalesCost, setupCost, totalCost, Ss, false, inputs)
+    return constructTableDataMap(policyParam1, policyParam2, I, T, TH, turns, invHoldingCost, backorderLostsalesCost, setupCost, totalCost, includeServiceLevels, inputs, isMinCost)
 }
 
 function generateTables(inputs) {
-    const minTableDiv = document.getElementById('min-table')
-    const alphaTableDiv = document.getElementById('alpha-table')
-    const betaTableDiv = document.getElementById('beta-table')
-    // remove all children
-    minTableDiv.textContent = ''
-    alphaTableDiv.textContent = ''
-    betaTableDiv.textContent = ''
+    let tables = []
 
     // min cost
+    const minTableDiv = document.createElement('div')
+    minTableDiv.classList.add('min-table')
     const minCostPolicy = optimal(inputs)
-    const minCostTableData = generateTableData(minCostPolicy, inputs, inputs.orderSetupCost !== 0)
+    const minCostTableData = generateTableData(minCostPolicy, inputs, !inputs.eoq, true)
     const minCostTable = generateTable('Minimizing Total Average Annual Cost', minCostTableData)
     minTableDiv.appendChild(minCostTable)
+    minTableDiv.classList.add('output-table-div')
+    tables.push(minTableDiv)
 
     // alpha
-    const alphaPolicy = alpha(inputs)
-    const alphaTableData = generateTableData(alphaPolicy, inputs)
-    const alphaTable = generateTable('Achieving Cycle Service Level', alphaTableData)
-    alphaTableDiv.appendChild(alphaTable)
+    if ((inputs.alpha < 1) && (inputs.alpha > 0)) {
+        const alphaTableDiv = document.createElement('div')
+        alphaTableDiv.classList.add('alpha-table')
+        const alphaPolicy = alpha(inputs)
+        const alphaTableData = generateTableData(alphaPolicy, inputs)
+        const alphaTable = generateTable(`Achieving Cycle Service Level = ${inputs.alpha}`, alphaTableData)
+        alphaTableDiv.appendChild(alphaTable)
+        alphaTableDiv.classList.add('output-table-div')
+        tables.push(alphaTableDiv)
+    }
 
     // beta
-    const betaPolicy = beta(inputs)
-    const betaTableData = generateTableData(betaPolicy, inputs)
-    const betaTable = generateTable('Achieving Fill Rate', betaTableData)
-    betaTableDiv.appendChild(betaTable)
+    if ((inputs.beta < 1) && (inputs.beta > 0)) {
+        const betaTableDiv = document.createElement('div')
+        betaTableDiv.classList.add('beta-table')
+        const betaPolicy = beta(inputs)
+        const betaTableData = generateTableData(betaPolicy, inputs)
+        const betaTable = generateTable(`Achieving Fill Rate = ${inputs.beta}`, betaTableData)
+        betaTableDiv.appendChild(betaTable)
+        betaTableDiv.classList.add('output-table-div')
+        tables.push(betaTableDiv)
+    }
+
+    return tables
 }
 
 function arrayToPolicy(policyInput, inputs) {
@@ -264,44 +287,64 @@ function arrayToPolicy(policyInput, inputs) {
     }
 }
 
-function generateRestOfPolicyTable(policyInput, inputs, policyTableDiv, input1, input2) {
-    policyTableDiv.innerText = ''
+function generateRestOfPolicyTable(policyInput, inputs, input1, input2) {
     let policyTableData
 
     const policy = arrayToPolicy(policyInput, inputs)
     // we only use the second input (policyInput[1]) for (Q, R) policies for continuous
+    // when we specify periodic policies, we only use the first input, for the (S) policy.
     if (isFinite(policyInput[0]) && (isFinite(policyInput[1]) || !inputs.continuous)) {
         const {I, T, TH, turns} = processFlowCalculations(policy, inputs)
         const {invHoldingCost, backorderLostsalesCost, setupCost, totalCost} = costCalculations(policy, inputs)
-        policyTableData = constructTableDataMap(input1, input2, I, T, TH, turns, invHoldingCost, backorderLostsalesCost, setupCost, totalCost, false, true, inputs)
+        policyTableData = constructTableDataMap(input1, input2, I, T, TH, turns, invHoldingCost, backorderLostsalesCost, setupCost, totalCost, !inputs.eoq, inputs)
     } else {
         // create empty table if not
-        policyTableData = constructTableDataMap(input1, input2, '', '', '', '', '', '', '', '', false, true, inputs)
+        policyTableData = constructTableDataMap(input1, input2, '', '', '', '', '', '', '', '', !inputs.eoq, inputs)
     }
-    const policyTable = generateTable('Performance Measures for Given Policy', policyTableData, inputs.continuous)
-    policyTableDiv.appendChild(policyTable)
+    return generateTable('Performance Measures for Given Policy', policyTableData, inputs.continuous)
 }
 
 function generatePolicyTable(inputs) {
-    const policyTableDiv = document.getElementById('policy-table')
-
     // index 0 is Q or S, index 1 is R or s
     const policyInput = [NaN, NaN]
+
+    const policyTableDiv = document.createElement('div')
+    policyTableDiv.classList.add('output-table-div')
 
     const input1 = document.createElement('input')
     input1.classList.add('policy-input')
     input1.addEventListener('change', (e) => {
         policyInput[0] = parseFloat(e.target.value)
-        generateRestOfPolicyTable(policyInput, inputs, policyTableDiv, input1, input2)
+        policyTableDiv.textContent = ''
+        policyTableDiv.appendChild(generateRestOfPolicyTable(policyInput, inputs, input1, input2))
     })
     const input2 = document.createElement('input')
     input2.classList.add('policy-input')
     input2.addEventListener('change', (e) => {
         policyInput[1] = parseFloat(e.target.value)
-        generateRestOfPolicyTable(policyInput, inputs, policyTableDiv, input1, input2)
+        policyTableDiv.textContent = ''
+        policyTableDiv.appendChild(generateRestOfPolicyTable(policyInput, inputs, input1, input2))
     })
 
-    generateRestOfPolicyTable(policyInput, inputs, policyTableDiv, input1, input2)
+    policyTableDiv.appendChild(generateRestOfPolicyTable(policyInput, inputs, input1, input2))
+    return policyTableDiv
+}
+
+function generateAllTables(inputs) {
+    // create tables programmatically and get a list of HTML nodes
+    // based on length of this list, decide how to format
+    let tables = []
+
+    tables.push(generatePolicyTable(inputs), ...generateTables(inputs))
+
+    // remove all content for tables
+    const tableDiv = document.getElementById('output-tables')
+    tableDiv.classList.add('output-tables')
+    tableDiv.textContent = ''
+
+    for (let table of tables) {
+        tableDiv.appendChild(table)
+    }
 }
 
 function getGraphInputs() {
@@ -508,9 +551,7 @@ function calculate() {
     if (!inputs) { return }
 
     // generate tables
-    generateTables(inputs)
-    // You can control (Q, R) or (S, s) on this table
-    generatePolicyTable(inputs)
+    generateAllTables(inputs)
 
     // generate graph
     showGraph()
@@ -867,8 +908,12 @@ function fill() {
     document.getElementById('orderSetupCost').value = 60
     document.getElementById('backorderLostsalesCost').value = 3
     document.getElementById('invCarryingRate').value = 25
-    document.getElementById('alpha').value = 98
-    document.getElementById('beta').value = 95
+    if (document.getElementById('alpha')) {
+        document.getElementById('alpha').value = 98
+    }
+    if (document.getElementById('beta')) {
+        document.getElementById('beta').value = 95
+    }
     if (document.getElementById('reviewPeriod')) {
         document.getElementById('reviewPeriod').value = 21
     }
@@ -888,6 +933,17 @@ function togglePeriodDetails(continuous) {
     }
 }
 
+function toggleServiceLevels(demandStdDev, leadtimeStdDev) {
+    const serviceLevelsContainer = document.getElementById('service-levels-container')
+    if (demandStdDev === 0 && leadtimeStdDev === 0) {
+        savedServiceLevelsContainer = serviceLevelsContainer
+        serviceLevelsContainer.remove()
+    } else {
+        const inputContainerInputs = document.getElementById('input-container-inputs')
+        inputContainerInputs.appendChild(savedServiceLevelsContainer)
+    }
+}
+
 // upon pressing 'Calculate Policies'
 const submitButton = document.getElementById('input-submit')
 submitButton.addEventListener('click', calculate)
@@ -900,6 +956,7 @@ graphButton.addEventListener('click', showGraph)
 const excelButton = document.getElementById('download-excel')
 excelButton.addEventListener('click', downloadExcel)
 
+// upon pressing 'Fill Data'
 const fillButton = document.getElementById('fill')
 fillButton.addEventListener('click', fill)
 
@@ -908,6 +965,14 @@ let savedReviewPeriodDetailsContainer = document.getElementById('review-period-d
 // handle change of visibility
 const reviewSelect = document.getElementById('review')
 reviewSelect.addEventListener('change', (e) => togglePeriodDetails(e.target.value === 'continuous'))
+
+// handles visibility of selecting service levels
+let savedServiceLevelsContainer = document.getElementById('service-levels-container')
+// handle change of visibility
+const demandStdDevInput = document.getElementById('demandStdDev')
+const leadtimeStdDevInput = document.getElementById('leadtimeStdDev')
+demandStdDevInput.addEventListener('change', (e) => toggleServiceLevels(parseFloat(e.target.value), parseFloat(leadtimeStdDevInput.value)))
+leadtimeStdDevInput.addEventListener('change', (e) => toggleServiceLevels(parseFloat(demandStdDevInput.value), parseFloat(e.target.value)))
 
 // handle collapse
 const collapseButtons = document.getElementsByClassName('collapsible-container-header')
