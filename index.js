@@ -758,8 +758,8 @@ async function downloadExcel() {
     // transform to inputs dataset
     const inputDataset = []
     for (let [key, value] of Object.entries(inputs)) {
-        // causes Excel to break if non-finite, expects a finite number
-        if (!isFinite(value)) { continue }
+        // causes Excel to break if non-finite or falsy, expects a finite number
+        if (!isFinite(value) || !value) { continue }
 
         // ignore irrelevant rows
         if (inputs.continuous && ['leadtimePeriodDemandMean', 'leadtimePeriodDemandStdDev', 'reviewPeriod', 'invReviewCost', 'periodDemandMean'].includes(key)) {
