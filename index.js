@@ -237,14 +237,16 @@ function generateTables(inputs) {
     let tables = []
 
     // min cost
-    const minTableDiv = document.createElement('div')
-    minTableDiv.classList.add('min-table')
-    const minCostPolicy = optimal(inputs)
-    const minCostTableData = generateTableData(minCostPolicy, inputs, true, true)
-    const minCostTable = generateTable('Minimizing Total Average Annual Cost', minCostTableData)
-    minTableDiv.appendChild(minCostTable)
-    minTableDiv.classList.add('output-table-div')
-    tables.push(minTableDiv)
+    if (inputs.backorderLostsalesCost != 0) {
+        const minTableDiv = document.createElement('div')
+        minTableDiv.classList.add('min-table')
+        const minCostPolicy = optimal(inputs)
+        const minCostTableData = generateTableData(minCostPolicy, inputs, true, true)
+        const minCostTable = generateTable('Minimizing Total Average Annual Cost', minCostTableData)
+        minTableDiv.appendChild(minCostTable)
+        minTableDiv.classList.add('output-table-div')
+        tables.push(minTableDiv)
+    }
 
     // alpha
     if ((inputs.alpha < 1) && (inputs.alpha > 0)) {
