@@ -351,6 +351,7 @@ select {
 
 .output-table-section-header {
     font-size: 14px;
+    font-weight: bold;
 }
 
 .output-table-data-row {

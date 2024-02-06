@@ -56,7 +56,7 @@ async function generateGraph(axisTitle, axisValues, invHoldingCost, backorderLos
                 plugins: {
                     title: {
                         display: true,
-                        text: `Cost as a Function of ${axisTitle}`,
+                        text: `Average Annual Cost as a Function of ${axisTitle}`,
                         font: {
                             size: 16
                         }
@@ -70,13 +70,13 @@ async function generateGraph(axisTitle, axisValues, invHoldingCost, backorderLos
                 scales: {
                     x: {
                         title: {
-                            text: swapAxes ? 'Cost' : axisTitle,
+                            text: swapAxes ? 'Average Annual Cost' : axisTitle,
                             display: true
                         }
                     },
                     y: {
                         title: {
-                            text: swapAxes ? axisTitle : 'Cost',
+                            text: swapAxes ? axisTitle : 'Average Annual Cost',
                             display: true
                         }
                     }
