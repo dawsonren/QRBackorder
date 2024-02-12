@@ -40,7 +40,12 @@ function findRFromQ(inputs, Q) {
         // deterministic demand
         return inputs.leadtimeDemandMean
     }
-    const z = invNormalCDF(1 - (inputs.holdingCost * Q / denom))
+    // What to do in this scenario?
+    // if (inputs.holdingCost * Q / denom >= 1) {
+    //     // when backorder/lost sales is too small
+    //     return 0
+    // }
+    const z = invNormalCDF(1 - inputs.holdingCost * Q / denom)
     return inputs.leadtimeDemandMean + inputs.leadtimeDemandStdDev * z
 }
 
@@ -61,7 +66,8 @@ function continuousProcessFlowCalculations(Q, R, inputs) {
         I: avgInv,
         T: avgFlowTime,
         TH: avgThroughput,
-        turns: avgInvTurns
+        turns: avgInvTurns,
+        backorderLostsalesInCycle: avgLossPerCycle
     }
 }
 
@@ -81,6 +87,7 @@ function periodicProcessFlowCalculations(S, s, inputs) {
         I: avgInv,
         T: avgFlowTime,
         TH: avgThroughput,
+        backorderLostsalesInCycle: avgLossPerCycle,
         turns: avgInvTurns
     }
 }
