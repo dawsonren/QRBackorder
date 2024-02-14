@@ -103,6 +103,16 @@ function processFlowCalculations(policy, inputs) {
 
 /* Cost Calculations */
 function continuousCostCalculations(Q, R, inputs) {
+    if (Q === 0 && R === 0) {
+        // this happens when backorder/lost sales is too small, so we never carry any inventory
+        return {
+            invHoldingCost: 0,
+            backorderLostsalesCost: inputs.annualDemand * inputs.backorderLostsalesCost,
+            setupCost: 0,
+            totalCost: inputs.annualDemand * inputs.backorderLostsalesCost
+        }
+    }
+
     const avgLossPerCycle = continuousFindAvgLostPerCycle(inputs, R)
     const ordersPerYear = inputs.annualDemand / Q
     let avgInv = Q / 2 + R - inputs.leadtimeDemandMean
@@ -157,6 +167,10 @@ function costCalculations(policy, inputs) {
 
 /* Find service levels */
 function cycleServiceLevelContinuous(Q, R, inputs) {
+    if (Q === 0 && R === 0) {
+        return 0
+    }
+
     if (inputs.leadtimeDemandStdDev === 0) {
         return R >= inputs.leadtimeDemandMean ? 1 : 0
     }
@@ -168,6 +182,10 @@ function cycleServiceLevelPeriodic(S, s, inputs) {
 }
 
 function fillRateContinuous(Q, R, inputs) {
+    if (Q === 0 && R === 0) {
+        return 0
+    }
+
     const shortage = continuousFindAvgLostPerCycle(inputs, R)
     return inputs.backorder ? 1 - (shortage / Q) : 1 - (shortage / (shortage + Q))
 }
@@ -202,6 +220,11 @@ function optimalContinuous(inputs) {
     // Step 0
     let Q_old = Math.sqrt(2 * inputs.orderSetupCost * inputs.annualDemand / inputs.holdingCost)
     let R_old = findRFromQ(inputs, Q_old)
+
+    if (inputs.holdingCost * Q_old > inputs.backorderLostsalesCost * inputs.annualDemand) {
+        // when backorder/lost sales is too small
+        return {Q: 0, R: 0}
+    }
 
     // if EOQ (zero variability in leadtime and demand), then just return
     if (inputs.leadtimeDemandStdDev === 0) {

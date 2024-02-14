@@ -237,10 +237,11 @@ function generateTableData(policy, inputs, includeServiceLevels=false, isMinCost
 
 function generateTables(inputs) {
     let tables = []
+    // 360 * 40 = 14400
 
     // min cost
     // TODO: handle the error when policy is NaN in a more graceful way
-    if (inputs.backorderLostsalesCost != 0 && !isNaN(inputs.Q)) {
+    if (inputs.backorderLostsalesCost != 0) {
         const minTableDiv = document.createElement('div')
         minTableDiv.classList.add('min-table')
         const minCostPolicy = optimal(inputs)
