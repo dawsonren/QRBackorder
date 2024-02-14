@@ -129,6 +129,36 @@ const tableNameToTooltipText = {
     'Fill Rate': 'The fraction of demand that is satisfied immediately.'
 }
 
+function generateErrorTable(tableHeaderText, errorMessage) {
+    // tableData is a map whose contract is specified in generateTableData
+    const tbl = document.createElement('table')
+    tbl.classList.add('output-table')
+    const tblBody = document.createElement('tbody')
+
+    // create header
+    const tblHead = document.createElement('thead')
+    const headRow = document.createElement('tr')
+    const head = document.createElement('th')
+    head.setAttribute('colspan', 2)
+    head.appendChild(document.createTextNode(tableHeaderText))
+    head.classList.add('output-table-header')
+    headRow.appendChild(head)
+    tblHead.appendChild(headRow)
+
+    // create error inside
+    const errorRow = document.createElement('tr')
+    errorRow.classList.add('output-table-data-row')
+    const errorCell = document.createElement('td')
+    errorCell.setAttribute('colspan', 2)
+    errorCell.appendChild(document.createTextNode(errorMessage))
+    errorRow.appendChild(errorCell)
+    tblBody.appendChild(errorRow)
+
+    tbl.appendChild(tblHead)
+    tbl.appendChild(tblBody)
+    return tbl
+}
+
 function generateTable(tableHeaderText, tableData) {
     // tableData is a map whose contract is specified in generateTableData
     const tbl = document.createElement('table')
@@ -237,17 +267,22 @@ function generateTableData(policy, inputs, includeServiceLevels=false, isMinCost
 
 function generateTables(inputs) {
     let tables = []
-    // 360 * 40 = 14400
 
     // min cost
-    // TODO: handle the error when policy is NaN in a more graceful way
     if (inputs.backorderLostsalesCost != 0) {
         const minTableDiv = document.createElement('div')
         minTableDiv.classList.add('min-table')
         const minCostPolicy = optimal(inputs)
-        const minCostTableData = generateTableData(minCostPolicy, inputs, true, true)
-        const minCostTable = generateTable('Minimizing Total Average Annual Cost', minCostTableData)
-        minTableDiv.appendChild(minCostTable)
+        // handle when backorder/lost sales cost is too low
+        if (minCostPolicy.Q === 0 && minCostPolicy.R === 0) {
+            const errorMessage = 'The backorder/lost sales cost is too low to justify holding any inventory. The optimal policy is Q = 0 and R = 0, so that every customer is backordered.'
+            const errorTable = generateErrorTable('Minimizing Total Average Annual Cost', errorMessage)
+            minTableDiv.appendChild(errorTable)
+        } else {
+            const minCostTableData = generateTableData(minCostPolicy, inputs, true, true)
+            const minCostTable = generateTable('Minimizing Total Average Annual Cost', minCostTableData)
+            minTableDiv.appendChild(minCostTable)
+        }
         minTableDiv.classList.add('output-table-div')
         tables.push(minTableDiv)
     }

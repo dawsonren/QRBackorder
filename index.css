@@ -324,7 +324,7 @@ select {
 
 .output-table-div {
     margin: 10px 2px 2px 25px;
-    min-width: calc(50% - 40px);
+    width: calc(50% - 40px);
 }
 
 @media screen and (max-width: 750px) {
