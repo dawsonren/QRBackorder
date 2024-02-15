@@ -275,7 +275,7 @@ function generateTables(inputs) {
         const minCostPolicy = optimal(inputs)
         // handle when backorder/lost sales cost is too low
         if (minCostPolicy.Q === 0 && minCostPolicy.R === 0) {
-            const errorMessage = 'The backorder/lost sales cost is too low to justify holding any inventory. The optimal policy is Q = 0 and R = 0, so that every customer is backordered.'
+            const errorMessage = 'The backorder cost is too low to justify holding any inventory. The optimal policy is Q = 0 and R = 0, so that every customer is backordered.'
             const errorTable = generateErrorTable('Minimizing Total Average Annual Cost', errorMessage)
             minTableDiv.appendChild(errorTable)
         } else {
