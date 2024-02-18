@@ -210,16 +210,16 @@ function constructTableDataMap(QS, Rs, I, T, TH, turns, backorderLostsalesInCycl
     const optTableData = new Map()
 
     const invPolicy = new Map()
-    invPolicy.set(inputs.continuous ? 'Order Quantity Q = ' : 'Order Up To Level S = ', QS)
+    invPolicy.set(inputs.continuous ? 'Order Quantity Q' : 'Order Up To Level S', QS)
     if (inputs.continuous || isMinCost) {
-        invPolicy.set(inputs.continuous ? 'Reorder Point R = ' : 'Reorder Point s = ', Rs)
+        invPolicy.set(inputs.continuous ? 'Reorder Point R' : 'Reorder Point s', Rs)
     }
 
     const processFlowMeasures = new Map()
-    processFlowMeasures.set('Average Inventory = ', I)
-    processFlowMeasures.set('Average Flow Time = ', T)
-    processFlowMeasures.set('Throughput = ', TH)
-    processFlowMeasures.set('Inventory Turn = ', turns)
+    processFlowMeasures.set('Average Inventory', I)
+    processFlowMeasures.set('Average Flow Time', T)
+    processFlowMeasures.set('Throughput', TH)
+    processFlowMeasures.set('Inventory Turn', turns)
     processFlowMeasures.set('Average Number of Backorders/Lost Sales in an Order Cycle', backorderLostsalesInCycle)
 
     const costs = new Map()
@@ -244,7 +244,7 @@ function constructTableDataMap(QS, Rs, I, T, TH, turns, backorderLostsalesInCycl
 
     optTableData.set('Inventory Policy', invPolicy)
     optTableData.set('Process Flow Measures', processFlowMeasures)
-    optTableData.set('Costs', costs)
+    optTableData.set('Costs (Excluding Purchase Cost)', costs)
     if (includeServiceLevels) {
         optTableData.set('Service Levels', serviceLevels)
     }
