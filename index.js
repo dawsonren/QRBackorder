@@ -269,23 +269,21 @@ function generateTables(inputs) {
     let tables = []
 
     // min cost
-    if (inputs.backorderLostsalesCost != 0) {
-        const minTableDiv = document.createElement('div')
-        minTableDiv.classList.add('min-table')
-        const minCostPolicy = optimal(inputs)
-        // handle when backorder/lost sales cost is too low
-        if (minCostPolicy.Q === 0 && minCostPolicy.R === 0) {
-            const errorMessage = 'The backorder cost is too low to justify holding any inventory. The optimal policy is Q = 0 and R = 0, so that every customer is backordered.'
-            const errorTable = generateErrorTable('Minimizing Total Average Annual Cost', errorMessage)
-            minTableDiv.appendChild(errorTable)
-        } else {
-            const minCostTableData = generateTableData(minCostPolicy, inputs, true, true)
-            const minCostTable = generateTable('Minimizing Total Average Annual Cost', minCostTableData)
-            minTableDiv.appendChild(minCostTable)
-        }
-        minTableDiv.classList.add('output-table-div')
-        tables.push(minTableDiv)
+    const minTableDiv = document.createElement('div')
+    minTableDiv.classList.add('min-table')
+    const minCostPolicy = optimal(inputs)
+    // handle when backorder/lost sales cost is too low
+    if (minCostPolicy.Q === 0 && minCostPolicy.R === 0) {
+        const errorMessage = 'The backorder cost is too low to justify holding any inventory. The optimal policy is Q = 0 and R = 0, so that every customer is backordered.'
+        const errorTable = generateErrorTable('Minimizing Total Average Annual Cost', errorMessage)
+        minTableDiv.appendChild(errorTable)
+    } else {
+        const minCostTableData = generateTableData(minCostPolicy, inputs, true, true)
+        const minCostTable = generateTable('Minimizing Total Average Annual Cost', minCostTableData)
+        minTableDiv.appendChild(minCostTable)
     }
+    minTableDiv.classList.add('output-table-div')
+    tables.push(minTableDiv)
 
     // alpha
     if ((inputs.alpha < 1) && (inputs.alpha > 0)) {
@@ -967,6 +965,7 @@ function fill() {
     if (document.getElementById('invReviewCost')) {
         document.getElementById('invReviewCost').value = 0
     }
+    toggleServiceLevels(15, 0)
 }
 
 function togglePeriodDetails(continuous) {
