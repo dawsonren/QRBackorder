@@ -67,7 +67,8 @@ function continuousProcessFlowCalculations(Q, R, inputs) {
         T: avgFlowTime,
         TH: avgThroughput,
         turns: avgInvTurns,
-        backorderLostsalesInCycle: avgLossPerCycle
+        backorderLostsalesInCycle: avgLossPerCycle,
+        safetyInventory: R - inputs.leadtimePeriodDemandMean
     }
 }
 
@@ -88,7 +89,8 @@ function periodicProcessFlowCalculations(S, s, inputs) {
         T: avgFlowTime,
         TH: avgThroughput,
         backorderLostsalesInCycle: avgLossPerCycle,
-        turns: avgInvTurns
+        turns: avgInvTurns,
+        safetyInventory: null
     }
 }
 
@@ -114,13 +116,15 @@ function continuousCostCalculations(Q, R, inputs) {
     const invHoldingCost = avgInv * inputs.holdingCost
     const backorderLostsalesCost = inputs.backorderLostsalesCost * avgLossPerCycle * ordersPerYear
     const setupCost = inputs.orderSetupCost * ordersPerYear
+    const purchasingCost = inputs.annualDemand * inputs.purchasePrice * (inputs.backorder ? 1 : fillRateContinuous(Q, R, inputs))
     const totalCost = invHoldingCost + backorderLostsalesCost + setupCost
 
     return {
         invHoldingCost,
         backorderLostsalesCost,
         setupCost,
-        totalCost
+        totalCost,
+        purchasingCost
     }
 }
 
@@ -136,13 +140,15 @@ function periodicCostCalculations(S, s, inputs) {
     const backorderLostsalesCost = inputs.backorderLostsalesCost * avgLossPerPeriod * ordersPerYear
     // should we incorporate order setup cost into this? As in, inputs.orderSetupCost?
     const setupCost = inputs.invReviewCost * ordersPerYear
+    const purchasingCost = inputs.annualDemand * inputs.purchasePrice * (inputs.backorder ? 1 : fillRatePeriodic(S, s, inputs))
     const totalCost = invHoldingCost + backorderLostsalesCost + setupCost
 
     return {
         invHoldingCost,
         backorderLostsalesCost,
         setupCost,
-        totalCost
+        totalCost,
+        purchasingCost
     }
 }
 

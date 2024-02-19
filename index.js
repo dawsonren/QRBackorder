@@ -122,9 +122,11 @@ const tableNameToTooltipText = {
     'Average Number of Backorders/Lost Sales in an Order Cycle = ': 'The average number of backorders or lost sales in an order cycle.',
     'Inventory Turn = ': 'The number of times the inventory replenishes in a year.',
     'Average Annual Inventory Cost': 'The costs associated with holding the inventory.',
+    'Safety Inventory': 'The extra inventory held to protect against stockouts.',
     'Average Annual Backorder/Lost Sales Cost': 'The costs associated with  not satisfying a customer order (loss of profit, loss of goodwill, cost of having backorders)',
     'Average Annual Setup Cost': 'The costs of ordering and transportation.',
-    'Total Average Annual Cost': 'The sum of average annual inventory, backorder/lost sales and order setup cost.',
+    'Average Annual Purchase Cost': 'The costs associated with purchasing the inventory.',
+    'Total Average Annual Cost (Excluding Purchase Cost)': 'The sum of average annual inventory, backorder/lost sales and order setup cost.',
     'Cycle Service Level': 'The probability of not facing shortage in an order cycle.',
     'Fill Rate': 'The fraction of demand that is satisfied immediately.'
 }
@@ -204,10 +206,22 @@ function generateTable(tableHeaderText, tableData) {
     return tbl
 }
 
-function constructTableDataMap(QS, Rs, I, T, TH, turns, backorderLostsalesInCycle, invHoldingCost, backorderLostsalesCost, setupCost, totalCost, includeServiceLevels, inputs, isMinCost=false) {
+function constructTableDataMap(QS, Rs, I, T, TH, turns, backorderLostsalesInCycle, safetyInventory, invHoldingCost, backorderLostsalesCost, setupCost, annualPurchaseCost, totalCost, includeServiceLevels, inputs, isMinCost=false) {
     // QS is Q or S, Rs is R or s
     // continuous is a boolean for whether or not the problem is continuous
     const optTableData = new Map()
+
+    // grab information from policy and calculate service levels
+    let policy
+    if (typeof QS === 'object') {
+        policy = inputs.continuous ? {Q: parseFloat(QS.value), R: parseFloat(Rs.value)} : {S: parseFloat(QS.value), s: parseFloat(Rs.value)}
+    } else {
+        policy = inputs.continuous ? {Q: QS, R: Rs} : {S: QS, s: Rs}
+    }
+    
+    const empty = I === ''
+    const alpha = !empty ? cycleServiceLevel(policy, inputs) : ''
+    const beta = !empty ? fillRate(policy, inputs) : ''
 
     const invPolicy = new Map()
     invPolicy.set(inputs.continuous ? 'Order Quantity Q' : 'Order Up To Level S', QS)
@@ -221,25 +235,21 @@ function constructTableDataMap(QS, Rs, I, T, TH, turns, backorderLostsalesInCycl
     processFlowMeasures.set('Throughput', TH)
     processFlowMeasures.set('Inventory Turn', turns)
     processFlowMeasures.set('Average Number of Backorders/Lost Sales in an Order Cycle', backorderLostsalesInCycle)
-
+    if (inputs.continuous) {
+        processFlowMeasures.set('Safety Inventory', safetyInventory)
+    }
+    
     const costs = new Map()
     costs.set('Average Annual Inventory Cost', invHoldingCost)
     costs.set('Average Annual Backorder/Lost Sales Cost', backorderLostsalesCost)
     costs.set('Average Annual Setup Cost', setupCost)
-    costs.set('Total Average Annual Cost', totalCost)
+    costs.set('Average Annual Purchase Cost', annualPurchaseCost)
+    costs.set('Total Average Annual Cost (Excluding Purchase Cost)', totalCost)
 
     let serviceLevels = new Map()
     if (includeServiceLevels) {
-        let policy
-        if (typeof QS === 'object') {
-            policy = inputs.continuous ? {Q: parseFloat(QS.value), R: parseFloat(Rs.value)} : {S: parseFloat(QS.value), s: parseFloat(Rs.value)}
-        } else {
-            policy = inputs.continuous ? {Q: QS, R: Rs} : {S: QS, s: Rs}
-        }
-        
-        const empty = I === ''
-        serviceLevels.set('Cycle Service Level', !empty ? cycleServiceLevel(policy, inputs) : '')
-        serviceLevels.set('Fill Rate', !empty ? fillRate(policy, inputs) : '')
+        serviceLevels.set('Cycle Service Level', alpha)
+        serviceLevels.set('Fill Rate', beta)
     }
 
     optTableData.set('Inventory Policy', invPolicy)
@@ -254,15 +264,15 @@ function constructTableDataMap(QS, Rs, I, T, TH, turns, backorderLostsalesInCycl
 
 function generateTableData(policy, inputs, includeServiceLevels=false, isMinCost=false) {
     /*
-        processFlow: (Q, R, inputs) => {I, T, TH, turns, backorderLostsalesInCycle}
+        processFlow: (Q, R, inputs) => {I, T, TH, turns, backorderLostsalesInCycle, safetyInventory}
         costCalculations: (Q, R, inputs) => {invHoldingCost, backorderOrCost, setupCost, totalCost}
     */
-    const {I, T, TH, turns, backorderLostsalesInCycle} = processFlowCalculations(policy, inputs)
-    const {invHoldingCost, backorderLostsalesCost, setupCost, totalCost} = costCalculations(policy, inputs)
+    const {I, T, TH, turns, backorderLostsalesInCycle, safetyInventory} = processFlowCalculations(policy, inputs)
+    const {invHoldingCost, backorderLostsalesCost, setupCost, purchasingCost, totalCost} = costCalculations(policy, inputs)
     const policyParam1 = inputs.continuous ? policy.Q : policy.S
     const policyParam2 = inputs.continuous ? policy.R : policy.s
 
-    return constructTableDataMap(policyParam1, policyParam2, I, T, TH, turns, backorderLostsalesInCycle, invHoldingCost, backorderLostsalesCost, setupCost, totalCost, includeServiceLevels, inputs, isMinCost)
+    return constructTableDataMap(policyParam1, policyParam2, I, T, TH, turns, backorderLostsalesInCycle, safetyInventory, invHoldingCost, backorderLostsalesCost, setupCost, purchasingCost, totalCost, includeServiceLevels, inputs, isMinCost)
 }
 
 function generateTables(inputs) {
@@ -333,12 +343,12 @@ function generateRestOfPolicyTable(policyInput, inputs, input1, input2) {
     // we only use the second input (policyInput[1]) for (Q, R) policies for continuous
     // when we specify periodic policies, we only use the first input, for the (S) policy.
     if (isFinite(policyInput[0]) && (isFinite(policyInput[1]) || !inputs.continuous)) {
-        const {I, T, TH, turns, backorderLostsalesInCycle} = processFlowCalculations(policy, inputs)
-        const {invHoldingCost, backorderLostsalesCost, setupCost, totalCost} = costCalculations(policy, inputs)
-        policyTableData = constructTableDataMap(input1, input2, I, T, TH, turns, backorderLostsalesInCycle, invHoldingCost, backorderLostsalesCost, setupCost, totalCost, true, inputs)
+        const {I, T, TH, turns, backorderLostsalesInCycle, safetyInventory} = processFlowCalculations(policy, inputs)
+        const {invHoldingCost, backorderLostsalesCost, setupCost, totalCost, purchasingCost} = costCalculations(policy, inputs)
+        policyTableData = constructTableDataMap(input1, input2, I, T, TH, turns, backorderLostsalesInCycle, safetyInventory, invHoldingCost, backorderLostsalesCost, setupCost, purchasingCost, totalCost, true, inputs)
     } else {
         // create empty table if not
-        policyTableData = constructTableDataMap(input1, input2, '', '', '', '', '', '', '', '', '', true, inputs)
+        policyTableData = constructTableDataMap(input1, input2, '', '', '', '', '', '', '', '', '', '', '', true, inputs)
     }
     return generateTable('Performance Measures for Given Policy', policyTableData, inputs.continuous)
 }
@@ -703,6 +713,12 @@ const outputSchema = (continuous, backorder) => [
         width: 25
     },
     {
+        column: 'Safety Inventory',
+        type: Number,
+        value: row => row.safetyInventory,
+        width: 25
+    },
+    {
         column: 'Average Annual Inventory Cost',
         type: Number,
         value: row => row.invHoldingCost,
@@ -718,6 +734,12 @@ const outputSchema = (continuous, backorder) => [
         column: 'Average Annual Setup Cost',
         type: Number,
         value: row => row.setupCost,
+        width: 30
+    },
+    {
+        column: 'Average Annual Purchase Cost',
+        type: Number,
+        value: row => row.annualPurchaseCost,
         width: 30
     },
     {
@@ -831,11 +853,11 @@ async function downloadExcel() {
 
     for (let i = 0; i < outputNames.length; i++) {
         const policy = policyFuncs[i](inputs)
-        const {I, T, TH, turns, backorderLostsalesInCycle} = processFlowCalculations(policy, inputs)
+        const {I, T, TH, turns, backorderLostsalesInCycle, safetyInventory} = processFlowCalculations(policy, inputs)
         const {invHoldingCost, backorderLostsalesCost, setupCost, totalCost} = costCalculations(policy, inputs)
         const policyParam1 = inputs.continuous ? policy.Q : policy.S
         const policyParam2 = inputs.continuous ? policy.R : policy.s
-        outputDataset.push({name: outputNames[i], QS: policyParam1, Rs: policyParam2, I, T, TH, turns, backorderLostsalesInCycle, invHoldingCost, backorderLostsalesCost, setupCost, totalCost})
+        outputDataset.push({name: outputNames[i], QS: policyParam1, Rs: policyParam2, I, T, TH, turns, backorderLostsalesInCycle, safetyInventory, invHoldingCost, backorderLostsalesCost, setupCost, totalCost})
     }
 
     function createMaxValue(value) {
