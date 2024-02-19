@@ -68,7 +68,7 @@ function continuousProcessFlowCalculations(Q, R, inputs) {
         TH: avgThroughput,
         turns: avgInvTurns,
         backorderLostsalesInCycle: avgLossPerCycle,
-        safetyInventory: R - inputs.leadtimePeriodDemandMean
+        safetyInventory: R - inputs.leadtimeDemandMean
     }
 }
 
