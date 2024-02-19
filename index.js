@@ -254,7 +254,7 @@ function constructTableDataMap(QS, Rs, I, T, TH, turns, backorderLostsalesInCycl
 
     optTableData.set('Inventory Policy', invPolicy)
     optTableData.set('Process Flow Measures', processFlowMeasures)
-    optTableData.set('Costs (Excluding Purchase Cost)', costs)
+    optTableData.set('Costs', costs)
     if (includeServiceLevels) {
         optTableData.set('Service Levels', serviceLevels)
     }
