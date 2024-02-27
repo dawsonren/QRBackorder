@@ -4,6 +4,7 @@ import { generateGraph } from './graph.js'
 // import fonts so we don't have to get it from Google Fonts CDN
 import '@fontsource/oswald/200.css'
 import '@fontsource/oswald/400.css'
+import { min } from 'simple-statistics'
 
 /* UI Changes */
 

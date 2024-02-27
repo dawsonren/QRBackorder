@@ -36,7 +36,7 @@ function findRFromQ(inputs, Q) {
     if (!inputs.backorder) {
         denom += inputs.holdingCost * Q
     }
-    if (denom === 0) {
+    if (inputs.leadtimeDemandStdDev === 0) {
         // deterministic demand
         return inputs.leadtimeDemandMean
     }
