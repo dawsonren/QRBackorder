@@ -113,15 +113,15 @@ function generateTooltip(text, tooltipText) {
 }
 
 const tableNameToTooltipText = {
-    'Order Quantity Q = ': 'The number of units that must be ordered each time.',
-    'Reorder Point R = ': 'The reorder point. An order must be placed when the inventory position reaches this value.',
-    'Order Up To Level S = ': 'The level of inventory to order up to. The inventory order equals the difference between this value and the current level of inventory.',
-    'Reorder Point s = ': 'The reorder point. If inventory is below this value during inventory review, we reorder. Otherwise, we do not.',
-    'Average Inventory = ': 'The average annual quantity remaining in inventory.',
-    'Average Flow Time = ': 'The average duration a product stays in inventory in units of time.',
-    'Throughput = ': 'The average number of products going through the inventory in units of time.',
+    'Order Quantity Q': 'The number of units that must be ordered each time.',
+    'Reorder Point R': 'The reorder point. An order must be placed when the inventory position reaches this value.',
+    'Order Up To Level S': 'The level of inventory to order up to. The inventory order equals the difference between this value and the current level of inventory.',
+    'Reorder Point s': 'The reorder point. If inventory is below this value during inventory review, we reorder. Otherwise, we do not.',
+    'Average Inventory': 'The average annual quantity remaining in inventory.',
+    'Average Flow Time': 'The average duration a product stays in inventory in units of time.',
+    'Throughput': 'The average number of products going through the inventory in units of time.',
     'Average Number of Backorders/Lost Sales in an Order Cycle = ': 'The average number of backorders or lost sales in an order cycle.',
-    'Inventory Turn = ': 'The number of times the inventory replenishes in a year.',
+    'Inventory Turn': 'The number of times the inventory replenishes in a year.',
     'Average Annual Inventory Cost': 'The costs associated with holding the inventory.',
     'Safety Inventory': 'The extra inventory held to protect against stockouts.',
     'Average Annual Backorder/Lost Sales Cost': 'The costs associated with  not satisfying a customer order (loss of profit, loss of goodwill, cost of having backorders)',
