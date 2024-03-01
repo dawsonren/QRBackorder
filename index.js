@@ -120,7 +120,7 @@ const tableNameToTooltipText = {
     'Average Inventory': 'The average annual quantity remaining in inventory.',
     'Average Flow Time': 'The average duration a product stays in inventory in units of time.',
     'Throughput': 'The average number of products going through the inventory in units of time.',
-    'Average Number of Backorders/Lost Sales in an Order Cycle = ': 'The average number of backorders or lost sales in an order cycle.',
+    'Average Number of Backorders/Lost Sales in an Order Cycle': 'The average number of backorders or lost sales in an order cycle.',
     'Inventory Turn': 'The number of times the inventory replenishes in a year.',
     'Average Annual Inventory Cost': 'The costs associated with holding the inventory.',
     'Safety Inventory': 'The extra inventory held to protect against stockouts.',
