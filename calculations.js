@@ -44,6 +44,10 @@ function findRFromQ(inputs, Q) {
     return inputs.leadtimeDemandMean + inputs.leadtimeDemandStdDev * z
 }
 
+function minimalBackorderCost(inputs, Q) {
+    return inputs.holdingCost * Q / inputs.annualDemand
+}
+
 /* Process Flow Calculations */
 function continuousProcessFlowCalculations(Q, R, inputs) {
     const avgLossPerCycle = continuousFindAvgLostPerCycle(inputs, R)
@@ -345,4 +349,4 @@ function beta(inputs) {
     }
 }
 
-export { processFlowCalculations, costCalculations, optimal, alpha, beta, continuousFindAvgLostPerCycle, periodicFindAvgLostPerCycle, findRFromQ, cycleServiceLevel, fillRate }
+export { processFlowCalculations, costCalculations, optimal, alpha, beta, continuousFindAvgLostPerCycle, periodicFindAvgLostPerCycle, findRFromQ, cycleServiceLevel, fillRate, minimalBackorderCost }

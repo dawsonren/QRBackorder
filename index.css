@@ -331,10 +331,11 @@ select {
     .output-tables {
         flex-direction: column;
     }
-
+    
     .output-table-div {
         margin: 5px 25px;
         min-width: 0;
+        width: calc(100% - 50px);
     }
 }
 
@@ -381,6 +382,15 @@ select {
 
 .tradeoff-settings-text {
     margin-right: 5px;
+}
+
+.goal-variable {
+    width: 230px;
+}
+
+.goal-level {
+    width: 50px;
+    margin-right: 10px;
 }
 
 .indep-variable {

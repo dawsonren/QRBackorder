@@ -247,10 +247,23 @@
           <h2>Tradeoff</h2>
         </button>
         <div class="collapsible-content">
-          <div class="tradeoff-settings">
+          <div class="tradeoff-settings" id="tradeoff-settings-container">
             <div class="select-variable tradeoff-settings-item">
+              <label class="tradeoff-settings-text" for="goalVariable">Goal</label>
+              <select name="goalVariable" id="goalVariable" class="goal-variable">
+                <option value="min-cost">Minimize Total Average Annual Cost</option>
+                <option value="cycle-service-level">Achieve Cycle Service Level</option>
+                <option value="fill-rate">Achieve Fill Rate</option>
+              </select>
+            </div>
+            <div class="goal-level-container" id="goal-level-container">
+              <label class="tradeoff-settings-text" for="goalVariable">Achieve a level of</label>
+              <input type="number" id="goalLevel" name="goalLevel" class="goal-level"></input>
+              <span class="units" style="margin-left: -10px;">%</span>
+            </div>
+            <div class="select-variable tradeoff-settings-item"  id="goal-level-reference">
               <label class="tradeoff-settings-text" for="indepVariable">Annual Cost Tradeoff Against</label>
-              <select name="indepVariable" id="indepVariable" class="indep-variable" name="indepVariable">
+              <select name="indepVariable" id="indepVariable" class="indep-variable">
                 <option value="alpha">Cycle Service Level</option>
                 <option value="beta">Fill Rate</option>
                 <option value="demandMean">Demand Mean in a Period</option>

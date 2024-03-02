@@ -1,5 +1,5 @@
 import writeXlsxFile from 'write-excel-file'
-import { processFlowCalculations, costCalculations, optimal, alpha, beta, cycleServiceLevel, fillRate } from './calculations.js'
+import { processFlowCalculations, costCalculations, optimal, alpha, beta, cycleServiceLevel, fillRate, minimalBackorderCost } from './calculations.js'
 import { generateGraph } from './graph.js'
 // import fonts so we don't have to get it from Google Fonts CDN
 import '@fontsource/oswald/200.css'
@@ -399,12 +399,16 @@ function generateAllTables(inputs) {
 
 function getGraphInputs() {
     const indepVariableEl = document.getElementById('indepVariable')
+    const goalLevelEl = document.getElementById('goalLevel')
+    const goalLevelValue = goalLevelEl ? parseFloat(goalLevelEl.value) / 100 : NaN
 
     return {
         minValue: parseFloat(document.getElementById('minRange').value),
         maxValue: parseFloat(document.getElementById('maxRange').value),
         indepVariableText: indepVariableEl.options[indepVariableEl.selectedIndex].text,
-        indepVariableValue: indepVariableEl.value
+        indepVariableValue: indepVariableEl.value,
+        goalText: document.getElementById('goalVariable').value,
+        goalLevel: goalLevelValue
     }
 }
 
@@ -414,6 +418,9 @@ function getCleanedGraphInputs() {
     // set error message for graphs
     if (isNaN(graphInputs.minValue) || isNaN(graphInputs.maxValue) || (graphInputs.maxValue <= graphInputs.minValue)) {
         document.getElementById('graph-error').innerText = 'Limits incorrectly specified.'
+        return
+    } else if (isNaN(graphInputs.goalLevel) && ['cycle-service-level', 'fill-rate'].includes(graphInputs.goalText)) {
+        document.getElementById('graph-error').innerText = 'Goal level incorrectly specified.'
         return
     } else {
         document.getElementById('graph-error').innerText = ''
@@ -455,19 +462,30 @@ function getTradeoffData(rawInputs, graphInputs) {
     let orderSetupCosts = []
     let totalCosts = []
 
-    // when alpha or beta, use those, otherwise optimal
-    const policyFunc = (
-        graphInputs.indepVariableValue === 'alpha' ?
-            alpha :
-            graphInputs.indepVariableValue === 'beta' ?
-                beta : optimal
-    )
+    // when alpha or beta is independent, use those
+    // when alpha or beta is our goal, use those
+    // otherwise, use optimal
+    let policyFunc
+    if (graphInputs.indepVariableValue === 'alpha' || graphInputs.goalText === 'cycle-service-level') {
+        policyFunc = alpha
+    } else if (graphInputs.indepVariableValue === 'beta' || graphInputs.goalText === 'fill-rate') {
+        policyFunc = beta
+    } else {
+        policyFunc = optimal
+    }
+        
 
     for (let val of axisValues) {
         // shallow copy, this is fine since all are floats
         let adjustedInputs = {...rawInputs}
         // values in HTML match keys of inputs
         adjustedInputs[graphInputs.indepVariableValue] = val
+        // adjust alpha/beta from goal level
+        if (graphInputs.goalText === 'cycle-service-level') {
+            adjustedInputs['alpha'] = graphInputs.goalLevel
+        } else if (graphInputs.goalText === 'fill-rate') {
+            adjustedInputs['beta'] = graphInputs.goalLevel
+        }
         adjustedInputs = cleanInputs(adjustedInputs, false)
 
         const policy = policyFunc(adjustedInputs)
@@ -871,16 +889,19 @@ async function downloadExcel() {
         }
     }
 
+    const policy = optimal(inputs)
+    const minBackorderLostsalesCost = (inputs.backorder && inputs.continuous) ? minimalBackorderCost(inputs, policy.Q) : 0
+
     // Handle tradeoffs (graphInput objects)
     const tradeoffInputs = [
         {
-            minValue: 0,
+            minValue: 0.01,
             maxValue: 0.99,
             indepVariableText: 'Cycle Service Level',
             indepVariableValue: 'alpha'
         },
         {
-            minValue: 0,
+            minValue: 0.01,
             maxValue: 0.99,
             indepVariableText: 'Fill Rate',
             indepVariableValue: 'beta'
@@ -910,7 +931,7 @@ async function downloadExcel() {
             indepVariableValue: 'leadtimeStdDev'
         },
         {
-            minValue: 0,
+            minValue: 0.01,
             maxValue: createMaxValue(inputs.purchasePrice),
             indepVariableText: 'Purchase Price',
             indepVariableValue: 'purchasePrice'
@@ -922,13 +943,13 @@ async function downloadExcel() {
             indepVariableValue: 'orderSetupCost'
         },
         {
-            minValue: 0,
-            maxValue: createMaxValue(inputs.backorderLostsalesCost),
+            minValue: minBackorderLostsalesCost,
+            maxValue: createMaxValue(Math.max(inputs.backorderLostsalesCost, minimalBackorderCost)),
             indepVariableText: 'Backorder or Lost Sales Cost',
             indepVariableValue: 'backorderLostsalesCost'
         },
         {
-            minValue: 0,
+            minValue: 1,
             maxValue: 100,
             indepVariableText: 'Inventory Carrying Rate',
             indepVariableValue: 'invCarryingRate'
@@ -1013,6 +1034,31 @@ function toggleServiceLevels(demandStdDev, leadtimeStdDev) {
     }
 }
 
+function toggleGoalLevel(goalSelection) {
+    const goalLevelContainer = document.getElementById('goal-level-container')
+    if (goalSelection === 'min-cost') {
+        savedGoalLevelContainer = goalLevelContainer
+        goalLevelContainer.remove()
+    } else {
+        const tradeoffSettingsContainer = document.getElementById('tradeoff-settings-container')
+        const reference = document.getElementById('goal-level-reference')
+        tradeoffSettingsContainer.insertBefore(savedGoalLevelContainer, reference)
+
+        // change the selectable inputs to exclude cycle service level / fill rate when they are our goal
+        const indepVariableSelect = document.getElementById('indepVariable')
+        for (let i = 0; i < indepVariableSelect.options.length; i++) {
+            const option = indepVariableSelect.options[i]
+            if ((option.value === 'alpha') || (option.value === 'beta')) {
+                option.disabled = true
+                // change value so the user can't stay on a disabled option
+                indepVariableSelect.value = 'demandMean'
+            } else {
+                option.disabled = false
+            }
+        }
+    }    
+}
+
 // upon pressing 'Calculate Policies'
 const submitButton = document.getElementById('input-submit')
 submitButton.addEventListener('click', calculate)
@@ -1037,11 +1083,18 @@ reviewSelect.addEventListener('change', (e) => togglePeriodDetails(e.target.valu
 
 // handles visibility of selecting service levels
 let savedServiceLevelsContainer = document.getElementById('service-levels-container')
+
+// handles visibility of selecting goal level for service levels
+let savedGoalLevelContainer = document.getElementById('goal-level-container')
+
 // handle change of visibility
 const demandStdDevInput = document.getElementById('demandStdDev')
 const leadtimeStdDevInput = document.getElementById('leadtimeStdDev')
 demandStdDevInput.addEventListener('change', (e) => toggleServiceLevels(parseFloat(e.target.value), parseFloat(leadtimeStdDevInput.value)))
 leadtimeStdDevInput.addEventListener('change', (e) => toggleServiceLevels(parseFloat(demandStdDevInput.value), parseFloat(e.target.value)))
+
+const goalVariableSelect = document.getElementById('goalVariable')
+goalVariableSelect.addEventListener('change', (e) => toggleGoalLevel(e.target.value))
 
 // handle collapse
 const collapseButtons = document.getElementsByClassName('collapsible-container-header')
@@ -1082,3 +1135,4 @@ for (let i = 0; i < collapseButtons.length; i++) {
 // onLoad lifecycle code (runs once during first paint)
 togglePeriodDetails(true)
 openCollapsedInputs()
+toggleGoalLevel('min-cost')
