@@ -142,6 +142,11 @@ select {
     }
 }
 
+.input-container-row-item-select {
+    background-color: #e9e9ed;
+    
+}
+
 .flex-col {
     display: flex;
     flex-direction: column;
