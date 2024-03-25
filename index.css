@@ -144,7 +144,6 @@ select {
 
 .input-container-row-item-select {
     background-color: #e9e9ed;
-    
 }
 
 .flex-col {
@@ -407,7 +406,7 @@ select {
     width: 20px;
 }
 
-.tradeoff-submit-and-error {
+.tradeoff-submit-container {
     margin-top: 10px;
 }
 

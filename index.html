@@ -171,26 +171,29 @@
                 </div>
               </div>
             </div>
-            <div class="input-container-section" id="service-levels-container">
-              <h3>Desired Service Levels</h3>
-              <div class="input-container-row">
+            <div class="input-container-section" id="goal-container">
+              <h3>Goal</h3>
+              <div class="input-container-row" id="goal-level-reference">
                 <div class="input-container-row-item">
                   <div class="tooltip">
-                    <label class="input-container-row-header tooltip-highlight" for="alpha">Cycle Service Level</label>
-                    <span class="tooltip-text">The probability of not having a shortage in an order cycle.</span>
+                    <label class="input-container-row-header tooltip-highlight" for="objective">Objective</label>
+                    <span class="tooltip-text">The objective of your policy, whether it's minimizing cost or achieving a service level.</span>
                   </div>
                   <div class="input-container-row-item-input">
-                    <input type="number" id="alpha" name="alpha"></input>
-                    <p class="units">%</p>
+                    <select name="goalVariable" id="goalVariable" class="goal-variable">
+                      <option value="min-cost">Minimize Total Average Annual Cost</option>
+                      <option value="cycle-service-level">Achieve Cycle Service Level</option>
+                      <option value="fill-rate">Achieve Fill Rate</option>
+                    </select>
                   </div>
                 </div>
-                <div class="input-container-row-item">
+                <div class="input-container-row-item" id="goal-level-container">
                   <div class="tooltip">
-                    <label class="input-container-row-header tooltip-highlight" for="beta">Fill Rate</label>
-                    <span class="tooltip-text">The fraction of overall demand that do not face shortage.</span>
+                    <label class="input-container-row-header tooltip-highlight" for="goalLevel">Service Level</label>
+                    <span class="tooltip-text">The service level you want to achieve, whether a cycle service level or fill rate.</span>
                   </div>
                   <div class="input-container-row-item-input">
-                    <input type="number" id="beta" name="beta"></input>
+                    <input type="number" id="goalLevel" name="goalLevel"></input>
                     <p class="units">%</p>
                   </div>
                 </div>
@@ -249,19 +252,6 @@
         <div class="collapsible-content">
           <div class="tradeoff-settings" id="tradeoff-settings-container">
             <div class="select-variable tradeoff-settings-item">
-              <label class="tradeoff-settings-text" for="goalVariable">Goal</label>
-              <select name="goalVariable" id="goalVariable" class="goal-variable">
-                <option value="min-cost">Minimize Total Average Annual Cost</option>
-                <option value="cycle-service-level">Achieve Cycle Service Level</option>
-                <option value="fill-rate">Achieve Fill Rate</option>
-              </select>
-            </div>
-            <div class="goal-level-container" id="goal-level-container">
-              <label class="tradeoff-settings-text" for="goalVariable">Achieve a level of</label>
-              <input type="number" id="goalLevel" name="goalLevel" class="goal-level"></input>
-              <span class="units" style="margin-left: -10px;">%</span>
-            </div>
-            <div class="select-variable tradeoff-settings-item"  id="goal-level-reference">
               <label class="tradeoff-settings-text" for="indepVariable">Annual Cost Tradeoff Against</label>
               <select name="indepVariable" id="indepVariable" class="indep-variable">
                 <option value="alpha">Cycle Service Level</option>
@@ -284,7 +274,7 @@
               <label for="swapAxes" class="tradeoff-settings-text" for="swapAxes">Cost On X Axis</label>
               <input type="checkbox" id="swapAxes" class="swap-axes-input" name="swapAxes" />
             </div>
-            <div class="tradeoff-submit-and-error tradeoff-settings-item">
+            <div class="tradeoff-submit-container tradeoff-settings-item">
               <button class="tradeoff-submit" id="graph-submit" type="submit">Display Graph</button>
               <button class="tradeoff-submit" id="download-excel" type="submit">Download as Excel</button>
               <span id="graph-error" class="error"></span>

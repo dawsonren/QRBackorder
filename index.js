@@ -20,8 +20,8 @@ function getRawInputs() {
         backorderLostsalesCost: document.getElementById('backorderLostsalesCost').value,
         invCarryingRate: document.getElementById('invCarryingRate').value / 100,
         // -1s serve as null values
-        alpha: document.getElementById('alpha') ? document.getElementById('alpha').value / 100 : -1,
-        beta: document.getElementById('beta') ? document.getElementById('beta').value / 100 : -1,
+        alpha: document.getElementById('goalVariable').value === 'cycle-service-level' ? document.getElementById('goalLevel').value / 100 : -1,
+        beta: document.getElementById('goalVariable').value === 'fill-rate' ? document.getElementById('goalLevel').value / 100 : -1,
         // 0/1 serve as booleans
         backorder: document.getElementById('backorderOrLostSales').value === 'backorder' ? 1 : 0,
         continuous: document.getElementById('review').value === 'continuous' ? 1 : 0,
@@ -44,6 +44,13 @@ function cleanInputs(inputs, raiseError=true) {
             errorMessage = true
         }
     })
+
+    const goal = document.getElementById('goalVariable').value
+    if (goal !== 'min-cost') {
+        if (document.getElementById('goalLevel').value === '') {
+            errorMessage = true
+        }
+    }
 
     // set error message for inputs
     if (raiseError) {
@@ -278,46 +285,53 @@ function generateTableData(policy, inputs, includeServiceLevels=false, isMinCost
 
 function generateTables(inputs) {
     let tables = []
+    let goalVariable = document.getElementById('goalVariable').value
 
     // min cost
-    const minTableDiv = document.createElement('div')
-    minTableDiv.classList.add('min-table')
-    const minCostPolicy = optimal(inputs)
-    // handle when backorder/lost sales cost is too low
-    if (minCostPolicy.Q === 0 && minCostPolicy.R === 0) {
-        const errorMessage = `The ${inputs.backorder ? "Backorder" : "Lost Sales"} cost is too low to justify holding any inventory. The optimal policy is Q = 0 and R = 0, so that every customer is ${inputs.backorder ? "backordered" : "lost"}.`
-        const errorTable = generateErrorTable('Minimizing Total Average Annual Cost', errorMessage)
-        minTableDiv.appendChild(errorTable)
-    } else {
-        const minCostTableData = generateTableData(minCostPolicy, inputs, true, true)
-        const minCostTable = generateTable('Minimizing Total Average Annual Cost', minCostTableData)
-        minTableDiv.appendChild(minCostTable)
+    if (goalVariable === 'min-cost') {
+        const minTableDiv = document.createElement('div')
+        minTableDiv.classList.add('min-table')
+        const minCostPolicy = optimal(inputs)
+        // handle when backorder/lost sales cost is too low
+        if (minCostPolicy.Q === 0 && minCostPolicy.R === 0) {
+            const errorMessage = `The ${inputs.backorder ? "Backorder" : "Lost Sales"} cost is too low to justify holding any inventory. The optimal policy is Q = 0 and R = 0, so that every customer is ${inputs.backorder ? "backordered" : "lost"}.`
+            const errorTable = generateErrorTable('Minimizing Total Average Annual Cost', errorMessage)
+            minTableDiv.appendChild(errorTable)
+        } else {
+            const minCostTableData = generateTableData(minCostPolicy, inputs, true, true)
+            const minCostTable = generateTable('Minimizing Total Average Annual Cost', minCostTableData)
+            minTableDiv.appendChild(minCostTable)
+        }
+        minTableDiv.classList.add('output-table-div')
+        tables.push(minTableDiv)
     }
-    minTableDiv.classList.add('output-table-div')
-    tables.push(minTableDiv)
 
     // alpha
-    if ((inputs.alpha < 1) && (inputs.alpha > 0)) {
-        const alphaTableDiv = document.createElement('div')
-        alphaTableDiv.classList.add('alpha-table')
-        const alphaPolicy = alpha(inputs)
-        const alphaTableData = generateTableData(alphaPolicy, inputs)
-        const alphaTable = generateTable(`Achieving Cycle Service Level = ${inputs.alpha}`, alphaTableData)
-        alphaTableDiv.appendChild(alphaTable)
-        alphaTableDiv.classList.add('output-table-div')
-        tables.push(alphaTableDiv)
+    if (goalVariable === 'cycle-service-level') {
+        if ((inputs.alpha < 1) && (inputs.alpha > 0)) {
+            const alphaTableDiv = document.createElement('div')
+            alphaTableDiv.classList.add('alpha-table')
+            const alphaPolicy = alpha(inputs)
+            const alphaTableData = generateTableData(alphaPolicy, inputs)
+            const alphaTable = generateTable(`Achieving Cycle Service Level = ${inputs.alpha}`, alphaTableData)
+            alphaTableDiv.appendChild(alphaTable)
+            alphaTableDiv.classList.add('output-table-div')
+            tables.push(alphaTableDiv)
+        }
     }
 
     // beta
-    if ((inputs.beta < 1) && (inputs.beta > 0)) {
-        const betaTableDiv = document.createElement('div')
-        betaTableDiv.classList.add('beta-table')
-        const betaPolicy = beta(inputs)
-        const betaTableData = generateTableData(betaPolicy, inputs)
-        const betaTable = generateTable(`Achieving Fill Rate = ${inputs.beta}`, betaTableData)
-        betaTableDiv.appendChild(betaTable)
-        betaTableDiv.classList.add('output-table-div')
-        tables.push(betaTableDiv)
+    if (goalVariable === 'fill-rate') {
+        if ((inputs.beta < 1) && (inputs.beta > 0)) {
+            const betaTableDiv = document.createElement('div')
+            betaTableDiv.classList.add('beta-table')
+            const betaPolicy = beta(inputs)
+            const betaTableData = generateTableData(betaPolicy, inputs)
+            const betaTable = generateTable(`Achieving Fill Rate = ${inputs.beta}`, betaTableData)
+            betaTableDiv.appendChild(betaTable)
+            betaTableDiv.classList.add('output-table-div')
+            tables.push(betaTableDiv)
+        }
     }
 
     return tables
@@ -418,9 +432,6 @@ function getCleanedGraphInputs() {
     // set error message for graphs
     if (isNaN(graphInputs.minValue) || isNaN(graphInputs.maxValue) || (graphInputs.maxValue <= graphInputs.minValue)) {
         document.getElementById('graph-error').innerText = 'Limits incorrectly specified.'
-        return
-    } else if (isNaN(graphInputs.goalLevel) && ['cycle-service-level', 'fill-rate'].includes(graphInputs.goalText)) {
-        document.getElementById('graph-error').innerText = 'Goal level incorrectly specified.'
         return
     } else {
         document.getElementById('graph-error').innerText = ''
@@ -1024,27 +1035,27 @@ function togglePeriodDetails(continuous) {
 }
 
 function toggleServiceLevels(demandStdDev, leadtimeStdDev) {
-    const serviceLevelsContainer = document.getElementById('service-levels-container')
-    if (demandStdDev === 0 && leadtimeStdDev === 0) {
-        savedServiceLevelsContainer = serviceLevelsContainer
-        serviceLevelsContainer.remove()
-    } else {
-        const inputContainerInputs = document.getElementById('input-container-inputs')
-        inputContainerInputs.appendChild(savedServiceLevelsContainer)
+    const eoq = demandStdDev === 0 && leadtimeStdDev === 0
+
+    const indepVariableSelect = document.getElementById('goalVariable')
+    for (let i = 0; i < indepVariableSelect.options.length; i++) {
+        const option = indepVariableSelect.options[i]
+        if (eoq && ((option.value === 'cycle-service-level') || (option.value === 'fill-rate'))) {
+            option.disabled = true
+            // change value so the user can't stay on a disabled option
+            indepVariableSelect.value = 'min-cost'
+        } else {
+            option.disabled = false
+        }
     }
+
+    const goalSelection = document.getElementById('goalVariable').value
+    toggleGoalLevel(goalSelection)
 }
 
-function toggleGoalLevel(goalSelection) {
-    const goalLevelContainer = document.getElementById('goal-level-container')
-    if (goalSelection === 'min-cost') {
-        savedGoalLevelContainer = goalLevelContainer
-        goalLevelContainer.remove()
-    } else {
-        const tradeoffSettingsContainer = document.getElementById('tradeoff-settings-container')
-        const reference = document.getElementById('goal-level-reference')
-        tradeoffSettingsContainer.insertBefore(savedGoalLevelContainer, reference)
-
-        // change the selectable inputs to exclude cycle service level / fill rate when they are our goal
+function adjustInputsForTradeoff(goalSelection) {
+    // change the tradeoff selectable inputs to exclude cycle service level / fill rate when they are our goal
+    if (goalSelection !== 'min-cost') {
         const indepVariableSelect = document.getElementById('indepVariable')
         for (let i = 0; i < indepVariableSelect.options.length; i++) {
             const option = indepVariableSelect.options[i]
@@ -1056,7 +1067,22 @@ function toggleGoalLevel(goalSelection) {
                 option.disabled = false
             }
         }
-    }    
+    }
+}
+
+function toggleGoalLevel(goalSelection) {
+    const goalLevelContainer = document.getElementById('goal-level-container')
+    if (goalSelection === 'min-cost') {
+        // do nothing if goal level container doesn't exist yet (remember, starts as null)
+        if (goalLevelContainer) {
+            savedGoalLevelContainer = goalLevelContainer
+            goalLevelContainer.remove()
+        }
+    } else {
+        const reference = document.getElementById('goal-level-reference')
+        reference.appendChild(savedGoalLevelContainer)
+    }
+    adjustInputsForTradeoff(goalSelection)
 }
 
 // upon pressing 'Calculate Policies'
@@ -1080,9 +1106,6 @@ let savedReviewPeriodDetailsContainer = document.getElementById('review-period-d
 // handle change of visibility
 const reviewSelect = document.getElementById('review')
 reviewSelect.addEventListener('change', (e) => togglePeriodDetails(e.target.value === 'continuous'))
-
-// handles visibility of selecting service levels
-let savedServiceLevelsContainer = document.getElementById('service-levels-container')
 
 // handles visibility of selecting goal level for service levels
 let savedGoalLevelContainer = document.getElementById('goal-level-container')

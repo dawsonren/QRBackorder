@@ -103,7 +103,7 @@ function test2() {
     S = optimal(inputs).S
     s = optimal(inputs).s
 
-    // TODO: THIS IS WRONG BECAUSE THERE'S A CALCULATION ERROR IN THE TEXTBOOK!!
+    // NOTE: THIS IS WRONG BECAUSE THERE'S A CALCULATION ERROR IN THE TEXTBOOK!!
     testRig(S, 12429, 'Sonbox Coffee 2 A')
     testRig(s, 12429, 'Sonbox Coffee 2 A')
 
