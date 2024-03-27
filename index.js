@@ -4,7 +4,6 @@ import { generateGraph } from './graph.js'
 // import fonts so we don't have to get it from Google Fonts CDN
 import '@fontsource/oswald/200.css'
 import '@fontsource/oswald/400.css'
-import { min } from 'simple-statistics'
 
 /* UI Changes */
 
@@ -1029,8 +1028,8 @@ function togglePeriodDetails(continuous) {
         savedReviewPeriodDetailsContainer = reviewPeriodDetailsContainer
         reviewPeriodDetailsContainer.remove()
     } else {
-        const inputContainerInputs = document.getElementById('input-container-inputs')
-        inputContainerInputs.appendChild(savedReviewPeriodDetailsContainer)
+        const reference = document.getElementById('goal-container')
+        reference.parentNode.insertBefore(savedReviewPeriodDetailsContainer, reference)
     }
 }
 
