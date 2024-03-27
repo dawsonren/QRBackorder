@@ -1054,18 +1054,21 @@ function toggleServiceLevels(demandStdDev, leadtimeStdDev) {
 
 function adjustInputsForTradeoff(goalSelection) {
     // change the tradeoff selectable inputs to exclude cycle service level / fill rate when they are our goal
-    if (goalSelection !== 'min-cost') {
-        const indepVariableSelect = document.getElementById('indepVariable')
-        for (let i = 0; i < indepVariableSelect.options.length; i++) {
-            const option = indepVariableSelect.options[i]
-            if ((option.value === 'alpha') || (option.value === 'beta')) {
-                option.disabled = true
-                // change value so the user can't stay on a disabled option
-                indepVariableSelect.value = 'demandMean'
-            } else {
-                option.disabled = false
-            }
+    const indepVariableSelect = document.getElementById('indepVariable')
+    for (let i = 0; i < indepVariableSelect.options.length; i++) {
+        const option = indepVariableSelect.options[i]
+        if ((goalSelection !== 'min-cost') && ((option.value === 'alpha') || (option.value === 'beta'))) {
+            option.disabled = true
+            // change value so the user can't stay on a disabled option
+            indepVariableSelect.value = 'demandMean'
+        } else {
+            option.disabled = false
         }
+    }
+
+    // switch to alpha if min-cost is selected
+    if (goalSelection === 'min-cost') {
+        indepVariableSelect.value = 'alpha'
     }
 }
 
