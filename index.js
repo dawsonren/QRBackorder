@@ -484,16 +484,15 @@ function getTradeoffData(rawInputs, graphInputs) {
         policyFunc = optimal
     }
         
-
     for (let val of axisValues) {
         // shallow copy, this is fine since all are floats
         let adjustedInputs = {...rawInputs}
         // values in HTML match keys of inputs
         adjustedInputs[graphInputs.indepVariableValue] = val
-        // adjust alpha/beta from goal level
-        if (graphInputs.goalText === 'cycle-service-level') {
+        // adjust alpha/beta from goal level, unless we're using alpha/beta as the independent variable
+        if (graphInputs.goalText === 'cycle-service-level' && graphInputs.indepVariableValue !== 'alpha') {
             adjustedInputs['alpha'] = graphInputs.goalLevel
-        } else if (graphInputs.goalText === 'fill-rate') {
+        } else if (graphInputs.goalText === 'fill-rate' && graphInputs.indepVariableValue !== 'beta') {
             adjustedInputs['beta'] = graphInputs.goalLevel
         }
         adjustedInputs = cleanInputs(adjustedInputs, false)
@@ -1057,7 +1056,7 @@ function adjustInputsForTradeoff(goalSelection) {
     const indepVariableSelect = document.getElementById('indepVariable')
     for (let i = 0; i < indepVariableSelect.options.length; i++) {
         const option = indepVariableSelect.options[i]
-        if ((goalSelection !== 'min-cost') && ((option.value === 'alpha') || (option.value === 'beta'))) {
+        if ((goalSelection === 'fill-rate' && option.value === 'alpha') || (goalSelection === 'cycle-service-level' && option.value === 'beta')) {
             option.disabled = true
             // change value so the user can't stay on a disabled option
             indepVariableSelect.value = 'demandMean'
