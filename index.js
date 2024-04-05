@@ -767,7 +767,7 @@ const outputSchema = (continuous, backorder) => [
     {
         column: 'Average Annual Purchase Cost',
         type: Number,
-        value: row => row.annualPurchaseCost,
+        value: row => row.purchasingCost,
         width: 30
     },
     {
@@ -876,17 +876,25 @@ async function downloadExcel() {
     // Handle outputs
     const outputDataset = []
 
-    const policyFuncs = [optimal, alpha, beta]
-    const outputNames = ['Minimizing Total Average Annual Cost', 'Achieving Cycle Service Level', 'Achieving Fill Rate']
-
-    for (let i = 0; i < outputNames.length; i++) {
-        const policy = policyFuncs[i](inputs)
-        const {I, T, TH, turns, backorderLostsalesInCycle, safetyInventory} = processFlowCalculations(policy, inputs)
-        const {invHoldingCost, backorderLostsalesCost, setupCost, totalCost} = costCalculations(policy, inputs)
-        const policyParam1 = inputs.continuous ? policy.Q : policy.S
-        const policyParam2 = inputs.continuous ? policy.R : policy.s
-        outputDataset.push({name: outputNames[i], QS: policyParam1, Rs: policyParam2, I, T, TH, turns, backorderLostsalesInCycle, safetyInventory, invHoldingCost, backorderLostsalesCost, setupCost, totalCost})
+    const policyFuncMap = {
+        'min-cost': optimal,
+        'cycle-service-level': alpha,
+        'fill-rate': beta
     }
+    const outputNameMap = {
+        'min-cost': 'Minimizing Total Average Annual Cost',
+        'cycle-service-level': 'Achieving Cycle Service Level',
+        'fill-rate': 'Achieving Fill Rate'
+    }
+
+    // get goal variable
+    const goalVariable = document.getElementById('goalVariable').value
+    const outputPolicy = policyFuncMap[goalVariable](inputs)
+    const {I, T, TH, turns, backorderLostsalesInCycle, safetyInventory} = processFlowCalculations(outputPolicy, inputs)
+    const {invHoldingCost, backorderLostsalesCost, setupCost, totalCost, purchasingCost} = costCalculations(outputPolicy, inputs)
+    const policyParam1 = inputs.continuous ? outputPolicy.Q : outputPolicy.S
+    const policyParam2 = inputs.continuous ? outputPolicy.R : outputPolicy.s
+    outputDataset.push({name: outputNameMap[goalVariable], QS: policyParam1, Rs: policyParam2, I, T, TH, turns, backorderLostsalesInCycle, safetyInventory, invHoldingCost, backorderLostsalesCost, setupCost, purchasingCost, totalCost})
 
     function createMaxValue(value) {
         // if value isn't 0, then just triple it
