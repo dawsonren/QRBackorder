@@ -11,11 +11,57 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <link rel="SHORTCUT ICON" href="favicon.ico" type="image/x-icon">  
     <link href="index.css" rel="stylesheet" type="text/css">
-    <script async src="index.js" type="module"></script>
+    <script src="index.js" type="module"></script>
     <!-- Test script, run to confirm that all test cases pass -->
     <!-- <script async src="test.js" type="module"></script> -->
   </head>
-  <body>
+  <body class="disclaimer-open">
+    <!-- Disclaimer: shown on every visit; the calculator can't be used until it is accepted. -->
+    <div id="disclaimer-modal" class="disclaimer-modal">
+      <div class="disclaimer-dialog" role="dialog" aria-modal="true" aria-labelledby="disclaimer-title" aria-describedby="disclaimer-text" tabindex="-1">
+        <h2 id="disclaimer-title" class="disclaimer-title">Disclaimer</h2>
+        <div id="disclaimer-text" class="disclaimer-text" tabindex="0">
+          <p>This Inventory Management Calculator is intended solely for educational and illustrative purposes. It is designed to demonstrate how inventory models work, what information they require as inputs, what results they produce, and how those results can help making more informed decisions.</p>
+          <p>This calculator is not designed, validated, or intended to serve as a professional decision-support system for real-world business operations, financial investments, ordering and purchasing decisions, inventory and supply chain planning, or other consequential applications. Accordingly, its results should not be used as the sole basis for such decisions. Real-world applications require more comprehensive analysis, appropriate model validation, and, when necessary, more sophisticated analytical or simulation tools and professional expertise.</p>
+          <p>To the fullest extent permitted by applicable law, the author and website creator shall not be liable for any indirect, incidental, consequential, or punitive damages arising from or related to the use of, or reliance upon, this calculator or its results.</p>
+        </div>
+        <button type="button" id="disclaimer-accept" class="disclaimer-accept">I Have Read and Understand the Disclaimer</button>
+      </div>
+    </div>
+    <script>
+      (function () {
+        var modal = document.getElementById('disclaimer-modal');
+        var dialog = modal.querySelector('.disclaimer-dialog');
+        var accept = document.getElementById('disclaimer-accept');
+        var open = true;
+
+        // Make everything behind the modal unreachable by mouse, keyboard and screen readers.
+        function setBackgroundInert(inert) {
+          Array.prototype.forEach.call(document.body.children, function (el) {
+            if (el === modal || el.tagName === 'SCRIPT') return;
+            if (inert) el.setAttribute('inert', ''); else el.removeAttribute('inert');
+          });
+        }
+
+        // Fallback for browsers without `inert`: pull focus back into the modal.
+        document.addEventListener('focusin', function (e) {
+          if (open && !modal.contains(e.target)) accept.focus();
+        });
+
+        document.addEventListener('DOMContentLoaded', function () {
+          if (!open) return;
+          setBackgroundInert(true);
+          dialog.focus();
+        });
+
+        accept.addEventListener('click', function () {
+          open = false;
+          setBackgroundInert(false);
+          modal.hidden = true;
+          document.body.classList.remove('disclaimer-open');
+        });
+      })();
+    </script>
     <header class="header">
       <h1 class="header-title">Operations Engineering and Management | Inventory Management Calculator</h1>
     </header>
